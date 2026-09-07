@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: maverick-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT main:app
+
+  - type: web
+    name: maverick-web
+    runtime: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishPath: out
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+    # AFTER the blueprint deploys: copy the maverick-api backend URL
+    # (e.g. https://maverick-api-xxxx.onrender.com) into frontend/public/_redirects,
+    # replace YOUR-BACKEND-URL, commit+push -> static site rebuilds with the live proxy.
