@@ -7,6 +7,9 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT main:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
 
   - type: web
     name: maverick-web
