@@ -50,6 +50,8 @@ Run `start.bat` which:
 4. Starts Next.js frontend on `http://localhost:3000`
 5. Opens the browser
 
+https://isro-burnin-detection.vercel.app/
+
 ### Manual Start
 
 **Backend:**
