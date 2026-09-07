@@ -200,6 +200,81 @@ export default function Home() {
               ))}
             </div>
           </div>
+        {/* MediSeg — Combined Portal */}
+          <div className="mt-24 max-w-6xl mx-auto">
+            <div className="flex flex-col md:flex-row items-end justify-between gap-4 mb-10">
+              <div>
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-teal-400/30 bg-teal-500/10 text-teal-300 text-xs font-medium mb-4">
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+                  All-In-One Project Portal
+                </div>
+                <h2 className="text-3xl md:text-4xl font-black tracking-tight text-white">
+                  MediSeg{' '}
+                  <span className="bg-gradient-to-r from-teal-400 to-emerald-500 bg-clip-text text-transparent">
+                    Smart Medical-Waste System
+                  </span>
+                </h2>
+                <p className="text-gray-400 mt-3 max-w-2xl leading-relaxed">
+                  The complete solution in one place — from the problem introduction and secure
+                  authentication to the interactive working prototype and full concept deck.
+                </p>
+              </div>
+              <a href="/mediseg"
+                className="px-6 py-3 text-sm font-semibold bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition-all shadow-lg shadow-teal-500/25 whitespace-nowrap">
+                Launch Prototype →
+              </a>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {[
+                {
+                  step: '01',
+                  title: 'Introduction',
+                  desc: 'Problem context, impact of unsafe medical waste, and the complete system architecture overview.',
+                  href: '/mediseg/intro',
+                  color: 'teal'
+                },
+                {
+                  step: '02',
+                  title: 'Sign In / Register',
+                  desc: 'Secure portal entry with strong password validation, live strength meter, and session management.',
+                  href: '/mediseg/login',
+                  color: 'emerald'
+                },
+                {
+                  step: '03',
+                  title: 'Working Prototype',
+                  desc: 'Interactive simulator — autonomous patrol, AI waste scanner (98% accuracy), BMWM 2018 segregation, tracking ledger.',
+                  href: '/mediseg',
+                  color: 'teal'
+                },
+                {
+                  step: '04',
+                  title: 'Concept Deck',
+                  desc: 'Presentation slides covering the SIH problem statement, methodology, and expected outcomes.',
+                  href: '/mediseg/presentation',
+                  color: 'emerald'
+                }
+              ].map((card, i) => (
+                <a key={i} href={card.href}
+                  className="glass-card rounded-2xl p-6 block transition-all duration-300 hover:-translate-y-1 hover:border-teal-500/40">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500/20 to-emerald-600/20 border border-teal-500/20 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                    </div>
+                    <span className="text-2xl font-black text-white/10">{card.step}</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">{card.title}</h3>
+                  <p className="text-xs text-gray-500 leading-relaxed mb-5">{card.desc}</p>
+                  <span className="inline-flex items-center gap-1.5 text-sm font-semibold bg-gradient-to-r from-teal-400 to-emerald-500 bg-clip-text text-transparent">
+                    Open →
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
