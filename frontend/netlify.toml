@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = "out"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Note: the /api/* -> backend proxy rule lives in public/_redirects
+# (gets copied into the /out folder), so it works with drag-drop
+# deploys on Netlify and Render alike. Set the real backend URL there.

@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1080" width="1600" height="1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060a14"/>
+      <stop offset="55%" stop-color="#0a1122"/>
+      <stop offset="100%" stop-color="#05080f"/>
+    </linearGradient>
+    <radialGradient id="coreGlow" cx="78%" cy="22%" r="60%">
+      <stop offset="0%" stop-color="#1a3a6b" stop-opacity="0.55"/>
+      <stop offset="55%" stop-color="#13294a" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#0a1122" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="trace" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4da6ff" stop-opacity="0.08"/>
+      <stop offset="50%" stop-color="#4da6ff" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#4da6ff" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="anomLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2dd4bf" stop-opacity="0.7"/>
+      <stop offset="45%" stop-color="#ff8b4d" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#ff5b35" stop-opacity="0.85"/>
+    </linearGradient>
+    <radialGradient id="waferChip" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1f5fae" stop-opacity="0.35"/>
+      <stop offset="70%" stop-color="#163a6d" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#0e2342" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#4da6ff" stroke-opacity="0.035" stroke-width="1"/>
+    </pattern>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1080" fill="url(#bg)"/>
+  <rect width="1600" height="1080" fill="url(#coreGlow)"/>
+  <rect width="1600" height="1080" fill="url(#grid)"/>
+
+  <!-- Wafer / die disc (burn-in screening target) -->
+  <g transform="translate(1230,190)">
+    <circle r="290" fill="url(#waferChip)"/>
+    <circle r="290" fill="none" stroke="#4da6ff" stroke-opacity="0.18" stroke-width="1.5"/>
+    <circle r="252" fill="none" stroke="#4da6ff" stroke-opacity="0.15" stroke-width="1"/>
+    <circle r="214" fill="none" stroke="#4da6ff" stroke-opacity="0.12" stroke-width="1"/>
+    <circle r="176" fill="none" stroke="#4da6ff" stroke-opacity="0.14" stroke-width="1"/>
+    <circle r="138" fill="none" stroke="#4da6ff" stroke-opacity="0.16" stroke-width="1"/>
+    <circle r="100" fill="none" stroke="#4da6ff" stroke-opacity="0.2" stroke-width="1.5"/>
+    <circle r="64" fill="none" stroke="#ff8b4d" stroke-opacity="0.25" stroke-width="1.5"/>
+    <circle r="28" fill="#ff8b4d" fill-opacity="0.35"/>
+    <g stroke="#4da6ff" stroke-opacity="0.06" stroke-width="1">
+      <line x1="0" y1="-290" x2="0" y2="290"/>
+      <line x1="-290" y1="0" x2="290" y2="0"/>
+      <line x1="-205" y1="-205" x2="205" y2="205"/>
+      <line x1="205" y1="-205" x2="-205" y2="205"/>
+    </g>
+    <!-- probe pins -->
+    <g stroke="#4da6ff" stroke-opacity="0.5" stroke-width="2.5">
+      <line x1="-235" y1="-150" x2="-175" y2="-60"/>
+      <line x1="-245" y1="-110" x2="-195" y2="-25"/>
+      <line x1="235" y1="-150" x2="175" y2="-60"/>
+      <line x1="245" y1="-110" x2="195" y2="-25"/>
+    </g>
+    <circle cx="-235" cy="-150" r="4" fill="#ff8b4d" opacity="0.8"/>
+    <circle cx="-245" cy="-110" r="4" fill="#ff8b4d" opacity="0.8"/>
+    <circle cx="235" cy="-150" r="4" fill="#ff8b4d" opacity="0.8"/>
+    <circle cx="245" cy="-110" r="4" fill="#ff8b4d" opacity="0.8"/>
+  </g>
+
+  <!-- Circuit traces -->
+  <g fill="none" stroke-width="2">
+    <path d="M -40 300 L 180 300 L 220 260 L 420 260 L 460 300 L 620 300" stroke="url(#trace)"/>
+    <path d="M -30 420 L 260 420 L 300 380 L 560 380 L 600 420 L 760 420" stroke="url(#trace)"/>
+    <path d="M -20 540 L 340 540 L 380 500 L 640 500 L 690 540 L 900 540" stroke="url(#trace)"/>
+    <path d="M 620 300 L 660 330 L 900 330 L 940 360 L 1230 360" stroke="url(#trace)"/>
+    <path d="M 760 420 L 800 390 L 1080 390 L 1120 420 L 1230 420" stroke="url(#trace)"/>
+    <path d="M 900 540 L 940 570 L 1230 570" stroke="url(#trace)"/>
+    <path d="M 420 260 L 420 160 L 620 160 L 620 300" stroke="url(#trace)"/>
+    <path d="M 640 500 L 640 610 L 760 610 L 760 420" stroke="url(#trace)"/>
+    <path d="M 300 380 L 300 300" stroke="url(#trace)"/>
+    <path d="M 560 380 L 560 470 L 640 470 L 640 500" stroke="url(#trace)"/>
+  </g>
+  <g fill="#4da6ff" opacity="0.35">
+    <circle cx="180" cy="300" r="4"/><circle cx="420" cy="260" r="4"/><circle cx="620" cy="300" r="4"/>
+    <circle cx="260" cy="420" r="4"/><circle cx="560" cy="380" r="4"/><circle cx="760" cy="420" r="4"/>
+    <circle cx="340" cy="540" r="4"/><circle cx="640" cy="500" r="4"/><circle cx="900" cy="540" r="4"/>
+    <circle cx="660" cy="330" r="4"/><circle cx="800" cy="390" r="4"/><circle cx="940" cy="360" r="4"/>
+    <circle cx="1080" cy="390" r="4"/><circle cx="1120" cy="420" r="4"/>
+  </g>
+
+  <!-- Time line under burn-in monitoring -->
+  <g transform="translate(140, 930)">
+    <line x1="0" y1="0" x2="1200" y2="0" stroke="#4da6ff" stroke-opacity="0.25" stroke-width="2"/>
+    <g fill="#4da6ff" opacity="0.45" font-family="monospace" font-size="15">
+      <circle cx="0" cy="0" r="6" fill="#ff8b4d" opacity="0.9"/>
+      <circle cx="330" cy="0" r="6"/>
+      <circle cx="620" cy="0" r="6"/>
+      <circle cx="1200" cy="0" r="6"/>
+      <text x="0" y="-22" fill="#8fbbe8">0h</text>
+      <text x="330" y="-22" fill="#8fbbe8">24h</text>
+      <text x="620" y="-22" fill="#8fbbe8">96h</text>
+      <text x="1200" y="-22" fill="#ff8b4d">168h — PREDICT</text>
+    </g>
+    <!-- drift waveform (iddq anomaly) -->
+    <g filter="url(#softGlow)">
+      <polyline fill="none" stroke="url(#anomLine)" stroke-width="3.5"
+        points="0,8 80,-4 160,2 240,-8 330,-14 420,-6 500,-20 580,-34 620,-40 700,-52 800,-44 900,-70 1000,-58 1100,-86 1200,-92"/>
+    </g>
+    <polyline fill="none" stroke="#2dd4bf" stroke-opacity="0.45" stroke-width="2" stroke-dasharray="1 12" stroke-linecap="round"
+      points="0,-20 330,-18 620,-16 960,-14 1200,-12"/>
+  </g>
+
+  <!-- drone/satellite-ish corner accents -->
+  <g fill="none" stroke="#4da6ff" stroke-opacity="0.12" stroke-width="1.5">
+    <rect x="60" y="60" width="34" height="34" rx="3"/>
+    <rect x="84" y="74" width="6" height="6"/>
+    <rect x="1506" y="986" width="34" height="34" rx="3"/>
+    <rect x="1506" y="986" width="10" height="10"/>
+  </g>
+</svg>

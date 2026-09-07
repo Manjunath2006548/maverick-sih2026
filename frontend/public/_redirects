@@ -1,0 +1,4 @@
+# Proxies every /api/* request to the Render-hosted FastAPI backend.
+# Works on Netlify (drag-drop of /out) AND Render Static Sites.
+# AFTER deploying the backend, replace YOUR-BACKEND-URL (e.g. https://maverick-api.onrender.com) here and rebuild.
+/api/*  https://YOUR-BACKEND-URL/api/:splat  200

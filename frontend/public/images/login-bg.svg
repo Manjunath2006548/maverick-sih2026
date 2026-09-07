@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1080" width="1600" height="1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#060a14"/>
+      <stop offset="55%" stop-color="#0a1122"/>
+      <stop offset="100%" stop-color="#05080f"/>
+    </linearGradient>
+    <radialGradient id="coreGlow" cx="50%" cy="42%" r="55%">
+      <stop offset="0%" stop-color="#1a3a6b" stop-opacity="0.4"/>
+      <stop offset="55%" stop-color="#13294a" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#0a1122" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="trace" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4da6ff" stop-opacity="0.05"/>
+      <stop offset="50%" stop-color="#4da6ff" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#4da6ff" stop-opacity="0.05"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4da6ff" stop-opacity="0.35"/>
+      <stop offset="50%" stop-color="#4da6ff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#ff8b4d" stop-opacity="0.25"/>
+    </linearGradient>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#4da6ff" stroke-opacity="0.035" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1600" height="1080" fill="url(#bg)"/>
+  <rect width="1600" height="1080" fill="url(#coreGlow)"/>
+  <rect width="1600" height="1080" fill="url(#grid)"/>
+
+  <!-- Central security shield (secure access gateway) -->
+  <g transform="translate(800,440)" fill="none">
+    <path d="M 0 -300 L 250 -210 V 40 C 250 300 120 380 0 420 C -120 380 -250 300 -250 40 V -210 Z"
+      stroke="url(#shield)" stroke-width="2.5"/>
+    <path d="M 0 -250 L 205 -172 V 30 C 205 250 100 315 0 350 C -100 315 -205 250 -205 30 V -172 Z"
+      stroke="#4da6ff" stroke-opacity="0.15" stroke-width="1.5"/>
+    <!-- keyhole check inside -->
+    <circle r="95" fill="#4da6ff" fill-opacity="0.06" stroke="#4da6ff" stroke-opacity="0.3" stroke-width="1.5"/>
+    <circle r="34" fill="#ff8b4d" fill-opacity="0.18" stroke="#ff8b4d" stroke-opacity="0.5" stroke-width="1.5"/>
+    <path d="M -12 0 L -3 12 L 16 -10" stroke="#ff8b4d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.85"/>
+    <!-- keyhole vertical slot -->
+    <path d="M 0 -60 V -28" stroke="#4da6ff" stroke-opacity="0.5" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Orbital arcs / access rings -->
+  <g fill="none" stroke="#4da6ff" stroke-opacity="0.14" stroke-width="1.5">
+    <circle cx="800" cy="440" r="430"/>
+    <circle cx="800" cy="440" r="430" stroke-dasharray="3 26" stroke-opacity="0.2"/>
+    <circle cx="800" cy="440" r="560" stroke-opacity="0.09"/>
+    <ellipse cx="800" cy="440" rx="640" ry="150" stroke-opacity="0.12"/>
+    <ellipse cx="800" cy="440" rx="640" ry="150" transform="rotate(60 800 440)" stroke-opacity="0.08"/>
+    <ellipse cx="800" cy="440" rx="640" ry="150" transform="rotate(-60 800 440)" stroke-opacity="0.08"/>
+  </g>
+
+  <!-- Circuit traces (data flow into the access gateway) -->
+  <g fill="none" stroke="url(#trace)" stroke-width="2">
+    <path d="M -60 220 L 120 220 L 160 180 L 250 180"/>
+    <path d="M -60 680 L 170 680 L 210 720 L 260 720"/>
+    <path d="M 1660 240 L 1450 240 L 1405 200 L 1350 200"/>
+    <path d="M 1660 660 L 1440 660 L 1395 700 L 1350 700"/>
+    <path d="M 250 180 L 250 360 L 320 360"/>
+    <path d="M 1350 200 L 1350 360 L 1280 360"/>
+    <path d="M 320 450 L 380 510 L 560 510"/>
+    <path d="M 1280 450 L 1220 510 L 1040 510"/>
+  </g>
+  <g fill="#4da6ff" opacity="0.3">
+    <circle cx="120" cy="220" r="4"/><circle cx="170" cy="680" r="4"/>
+    <circle cx="1450" cy="240" r="4"/><circle cx="1440" cy="660" r="4"/>
+    <circle cx="380" cy="510" r="4"/><circle cx="1220" cy="510" r="4"/>
+  </g>
+
+  <!-- verification waveform (authentication handshake) -->
+  <g filter="blur(1px)">
+    <polyline fill="none" stroke="#2dd4bf" stroke-opacity="0.5" stroke-width="3"
+      points="620,520 660,500 700,520 740,470 780,520 820,490 860,520 900,480 940,520 980,505 1020,520"/>
+  </g>
+  <line x1="620" y1="520" x2="1020" y2="520" stroke="#2dd4bf" stroke-opacity="0.15" stroke-width="1.5"/>
+
+  <!-- corner accents -->
+  <g fill="none" stroke="#4da6ff" stroke-opacity="0.12" stroke-width="1.5">
+    <rect x="60" y="60" width="34" height="34" rx="3"/>
+    <rect x="84" y="74" width="6" height="6"/>
+    <rect x="1506" y="986" width="34" height="34" rx="3"/>
+    <rect x="1506" y="986" width="10" height="10"/>
+    <rect x="1506" y="60" width="34" height="34" rx="3"/>
+    <rect x="1522" y="76" width="4" height="4"/>
+  </g>
+</svg>

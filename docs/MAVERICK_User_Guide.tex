@@ -1,0 +1,360 @@
+% =====================================================================
+% MAVERICK - User Guide (LaTeX version of the PDF manual)
+% Compile with: pdflatex MAVERICK_User_Guide.tex  (run twice)
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+% ---------- Packages ----------
+\usepackage[margin=2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+
+% ---------- Colours (ISRO theme) ----------
+\definecolor{isroyellow}{RGB}{255,193,7}
+\definecolor{isroblue}{RGB}{3,105,161}
+\definecolor{isrodarkblue}{RGB}{12,74,110}
+\definecolor{isrolightblue}{RGB}{224,242,254}
+\definecolor{boxorangebg}{RGB}{255,247,237}
+\definecolor{boxorangebd}{RGB}{253,186,116}
+\definecolor{boxgreenbg}{RGB}{240,253,244}
+\definecolor{boxgreenbd}{RGB}{134,239,172}
+\definecolor{boxbluebg}{RGB}{239,246,255}
+\definecolor{boxbluebd}{RGB}{147,197,253}
+\definecolor{boxredbg}{RGB}{254,242,242}
+\definecolor{boxredbd}{RGB}{252,165,165}
+\definecolor{boxgreybg}{RGB}{248,250,252}
+\definecolor{boxgreybd}{RGB}{226,232,240}
+
+% ---------- Section styling ----------
+\titleformat{\section}
+  {\Large\bfseries\color{isrodarkblue}}
+  {}{0em}{}[\vspace{-4pt}\rule{\textwidth}{1.5pt}]
+\titleformat{\subsection}
+  {\large\bfseries\color{isroblue}}
+  {}{0em}{}
+
+% ---------- Header / footer ----------
+\pagestyle{fancy}
+\fancyhead[L]{\small\color{isrodarkblue}\textbf{MAVERICK -- User Guide}}
+\fancyhead[R]{\small\color{gray}ISRO $|$ SIH 2026}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ---------- Custom commands ----------
+% Code/monospace inline
+\newcommand{\code}[1]{\texttt{\small #1}}
+% Info / success / warning / danger / neutral boxes
+\newcommand{\whatbox}[2]{%
+  \begin{center}\begin{minipage}{0.96\textwidth}%
+  \fcolorbox{boxbluebd}{boxbluebg}{\parbox{\dimexpr\textwidth-14pt}{%
+    \textbf{\textcolor{isroblue}{#1}}\\[2pt]#2}}\end{minipage}\end{center}}
+\newcommand{\greenbox}[2]{%
+  \begin{center}\begin{minipage}{0.96\textwidth}%
+  \fcolorbox{boxgreenbd}{boxgreenbg}{\parbox{\dimexpr\textwidth-14pt}{%
+    \textbf{\textcolor{green!50!black}{#1}}\\[2pt]#2}}\end{minipage}\end{center}}
+\newcommand{\orbox}[2]{%
+  \begin{center}\begin{minipage}{0.96\textwidth}%
+  \fcolorbox{boxorangebd}{boxorangebg}{\parbox{\dimexpr\textwidth-14pt}{%
+    \textbf{\textcolor{orange!70!black}{#1}}\\[2pt]#2}}\end{minipage}\end{center}}
+\newcommand{\grybox}[2]{%
+  \begin{center}\begin{minipage}{0.96\textwidth}%
+  \fcolorbox{boxgreybd}{boxgreybg}{\parbox{\dimexpr\textwidth-14pt}{%
+    \textbf{\textcolor{gray}{#1}}\\[2pt]#2}}\end{minipage}\end{center}}
+% Page break after a box (for print layout control)
+\newcommand{\pb}{\newpage}
+
+\begin{document}
+
+% =====================================================================
+% COVER PAGE
+% =====================================================================
+\thispagestyle{empty}
+\vspace*{6cm}
+\begin{center}
+  {\color{isroblue} \fbox{\makebox[0.7\textwidth][c]{%
+   \parbox[c]{\dimexpr0.7\textwidth-12pt}{%
+   \centering\vspace{10pt}
+   {\Huge\bfseries\textcolor{isroblue}{MAVERICK}}\\[6pt]
+   {\small USER GUIDE}\vspace{6pt}}}}}
+
+  \vspace{2.5cm}
+  {\Huge\bfseries\color{isrodarkblue} USER GUIDE}\\[8pt]
+  {\large\color{black!70} AI-Driven Anomaly Detection in}\\[4pt]
+  {\large\color{black!70} Component Burn-In \& Screening}
+
+  \vspace{2cm}
+  {\small\color{orange!70!black} Department of Space $|$ ISRO $|$ Smart India Hackathon 2026}
+
+  \vspace{4cm}
+  {\footnotesize\color{gray} Version 1.0 \quad$|$\quad For QA Inspectors, Electronic\\[2pt]
+   Test Engineers \& Evaluators}\\[8pt]
+  {\footnotesize\color{gray} This guide is for first-time users who have never used the web application.}
+\end{center}
+\newpage
+
+% =====================================================================
+% SECTION 1
+% =====================================================================
+\section{About the System}
+\textbf{MAVERICK} is a web application that helps find defective electronic components (ICs / chips /
+circuit parts) that pass the usual ``static limit'' screening but still show hidden abnormal behaviour
+during burn-in testing. Burn-in means running the component at a high temperature (for example
+$125^{\circ}$C) for a long time, and measuring its electrical parameters at different hours ---
+\textbf{0h, 24h, 96h and 168h}.
+
+The system has two AI tools (called Modules):
+\begin{itemize}
+  \item \textbf{Module A -- Dynamic Outlier Detection}: Compares each component against its own
+        manufacturing \textit{lot}. Even if a part is inside the datasheet limit (for example below
+        $50\,\mu$A), it is flagged if it drifts far away from the average of its lot
+        (e.g.\ lot average is $10\,\mu$A but this part shows $45\,\mu$A).
+  \item \textbf{Module B -- Time-Series Drift Predictor}: Takes the 0h and 24h readings, forecasts the
+        168h value, and checks whether the predicted drift is faster than a safe limit. If it is, the
+        component is flagged for early rejection.
+\end{itemize}
+
+\greenbox{Why this matters}{A defective part that escapes screening can fail catastrophically inside a
+satellite or rocket payload. This system reduces those escapes by catching ``latent defects'' early and
+by explaining every decision to the QA inspector.}
+
+% =====================================================================
+% SECTION 2
+% =====================================================================
+\section{How to Start the Application}
+\subsection{Starting the server (on the deployment PC)}
+\begin{enumerate}
+  \item Open the project folder on your computer.
+  \item Double-click \code{start.bat}. Two windows open automatically:
+        \begin{itemize}
+          \item The \textbf{Backend server} window (FastAPI --- processes the data).
+          \item The \textbf{Frontend server} window (Next.js --- the webpage you see).
+        \end{itemize}
+  \item Wait for the message \code{Ready} in the frontend window.
+\end{enumerate}
+
+\subsection{Opening the webpage}
+\begin{enumerate}
+  \item Open any browser (Chrome / Edge / Firefox).
+  \item Go to: \code{http://localhost:3000}
+  \item If you are testing from another computer on the same network, use the shared link given with the
+        deployment (the Cloudflare tunnel URL).
+\end{enumerate}
+
+% =====================================================================
+% SECTION 3
+% =====================================================================
+\section{How to Log In}
+On the first screen you will see the login page with a \textbf{secure gateway} design.
+\begin{enumerate}
+  \item Enter your \textbf{Email} and \textbf{Password} in the fields.
+  \item Click the \textbf{Login} button.
+  \item If a field is empty or the password is wrong, a red message appears. Check and try again.
+\end{enumerate}
+
+\whatbox{Demo accounts (use any one of these)}{
+\begin{center}
+\begin{tabular}{llll}
+\toprule
+\textbf{Role} & \textbf{Email} & \textbf{Password} & \textbf{Access}\\
+\midrule
+Admin & \code{admin@isro.gov.in}    & \code{Admin@123!} & Everything\\
+QA Inspector & \code{qa@isro.gov.in} & \code{Qa@123!}    & Everything\\
+Engineer & \code{engineer@isro.gov.in} & \code{Eng@123!} & Everything\\
+\bottomrule
+\end{tabular}
+\end{center}
+\small Passwords are strong on purpose. New registrations must also use a strong password (at least
+8 characters, an upper-case letter, a lower-case letter, a number and a special symbol).}
+
+After login you land on the \textbf{Dashboard (Mission Control)} page. On the left there is a sidebar
+menu with the pages: \textbf{Dashboard, Upload Data, Analysis Center} and your \textbf{account info}.
+
+% =====================================================================
+% SECTION 4
+% =====================================================================
+\section{Step-by-Step: How to Test the System}
+Follow these steps in order. The whole test takes about 2--3 minutes.
+
+\vspace{4pt}
+\textbf{Step 1 --- Load data:} go to \textbf{Upload Data} in the left menu.
+\grybox{You have two simple ways:}{
+\begin{itemize}
+  \item \textbf{Option 1 (easiest) -- Sample Data tab:} click the \textbf{Generate \& Load Sample
+        Data} button. This creates 200 realistic burn-in components across 5 lots with about
+        8\% known defects.
+  \item \textbf{Option 2 -- CSV / Excel Upload tab:} click inside the dashed box, choose your own
+        \code{.csv} or \code{.xlsx} file. The file should have at least:
+        \code{component\_id}, \code{lot\_id}, \code{[parameter]\_0h}, \code{[parameter]\_24h},
+        \code{[parameter]\_96h}, \code{[parameter]\_168h}. The standard parameters are
+        \code{iddq}, \code{leakage}, \code{delay} and \code{supply\_current}.
+\end{itemize}
+\small After loading you see a data preview (columns and first rows) and a confirmation message with
+the record count.}
+
+\vspace{4pt}
+\textbf{Step 2 --- Run the analysis:} go to \textbf{Analysis Center} in the left menu.\\
+You will see green text \textit{``Dataset loaded: X components across Y lots -- ready to analyze''}.
+If data is missing, an orange warning appears and runs are blocked until you load data.\\
+On the left there are four method tabs. Click \textbf{Comprehensive} first (it runs everything in one click):
+\begin{enumerate}
+  \item Keep the default \textbf{Z-Score Threshold = 1.5} and \textbf{IQR Multiplier = 1.5}
+        (recommended).
+  \item Click the \textbf{Run Comprehensive Analysis} button.
+  \item Wait a few seconds. The results appear below, including Module A verdicts, an
+        \textbf{Anomaly Detection Score} and (after it finishes training) Module B drift predictions.
+\end{enumerate}
+
+\orbox{Alternative (optional) -- run the two modules separately}{In the same Analysis Center you can
+also use \textbf{Module A: Outlier} (lot-based outlier detection), \textbf{Module B: Drift}
+(Train Models + Run Batch Prediction), and \textbf{Single Prediction} (type a component's 0h and 24h
+values manually to predict its 168h value at once).}
+
+\vspace{4pt}
+\textbf{Step 3 --- Look at the results and certificates:} the results already appear on screen.
+\begin{enumerate}
+  \item \textbf{Stat cards:} PASS / REVIEW / REJECT counts. Clicking a card \textit{opens a
+        certificate} underneath with the exact components.
+  \item \textbf{Detailed report:} in the results table, click \textbf{View Report} (or click a
+        PASS/REVIEW/REJECT badge). A report panel slides in from the right showing raw test values at
+        0h/24h/96h/168h, per-parameter outlier checks, why-the-verdict reasons, and drift predictions
+        to 168h.
+  \item \textbf{Certificate download:} inside the certificate, click \textbf{Download Certificate} to
+        save an official-looking certificate file. Open it in a browser and print / save as PDF for a
+        PDF copy.
+\end{enumerate}
+
+\vspace{4pt}
+\textbf{Step 4 --- Check the Dashboard:} go to \textbf{Dashboard} in the left menu.\\
+The mission-control screen summarises everything: total components, lots analyzed, anomalies found,
+drift models trained, the Module A PASS/REVIEW/REJECT split, the Anomaly Detection Score, and
+per-parameter drift accuracy (MAE / RMSE / R2) so you can judge how trustworthy the predictions are.
+
+% =====================================================================
+% SECTION 5
+% =====================================================================
+\section{What Output You Will Get}
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}lXX@{}}
+\toprule
+\textbf{Feature} & \textbf{Where to see it} & \textbf{What it shows}\\
+\midrule
+Data preview \& confirmation & Upload Data page & File name, record count, column list, first rows of your file\\[2pt]
+Classification summary cards & Analysis Center & Total components and counts of PASS / REVIEW / REJECT\\[2pt]
+Anomaly Detection Score & Analysis Center \& Dashboard & Score in \% with TP / FP / TN / FN and Recall (sensitivity)\\[2pt]
+Component results table & Analysis Center (Comprehensive / Module A) & Each component: lot, classification badge, risk score, anomalies count, ``View Report''\\[2pt]
+Certificate (Acceptance / Rejection / Manual Review) & After clicking a PASS / REVIEW / REJECT card & Certificate title, covered component list, test checklist, QA sign-off, reference number, Download button\\[2pt]
+Detailed component report & Click ``View Report'' & Raw 0h/24h/96h/168h values, per-parameter Module A analysis (z-score / IQR / absolute-limit flags), reasons \& recommendations, Module B predicted 168h, safety-slope check\\[2pt]
+Drift accuracy metrics & Module B tab \& Dashboard & Mean Absolute Error (MAE), RMSE, R2, MAPE per parameter, plus PASS/FAIL counts per prediction\\[2pt]
+Single prediction & Single Prediction tab & Predicted 168h value, drift rate, safety slope, exceed flag, recommendation, step-by-step explanation\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% =====================================================================
+% SECTION 6
+% =====================================================================
+\section{What You Can Observe From the Output}
+\subsection{Reading the classification cards}
+\begin{itemize}
+  \item \textbf{PASS (green)} --- component is normal: all parameters are close to its lot average.
+        Safe to use in the payload.
+  \item \textbf{REVIEW (orange)} --- a few parameters deviate moderately. Needs the QA inspector's
+        manual check before a final decision.
+  \item \textbf{REJECT (red)} --- clearly abnormal values (outliers) detected. Must \textbf{not} be
+        deployed.
+\end{itemize}
+
+\subsection{Reading the Anomaly Detection Score}
+\whatbox{Formula: $\mathrm{Score} = \max\!\left(0,\; \dfrac{TP+TN-10\times FN-1\times FP}{N}\right)$}{
+\begin{itemize}
+  \item \textbf{TP} = defective parts that were correctly flagged. \textbf{TN} = good parts that were
+        correctly passed.
+  \item \textbf{FN} = defective parts that escaped (missed). A missing defective part is
+        \textbf{catastrophic}, so one FN subtracts the value of 10 correct results.
+  \item \textbf{FP} = good parts wrongly flagged; costs only 1 point (safe but wasteful).
+\end{itemize}
+Best scores are near 100\%. On the included sample data the system typically scores around
+\textbf{81\% with a 100\% recall (zero escapes, FN = 0)} --- very desirable in space applications.}
+
+\subsection{Reading the drift (Module B) table}
+\begin{itemize}
+  \item Each row shows the \textbf{parameter}, its 0h and 24h inputs, the \textbf{Predicted 168h}
+        value, the \textbf{Actual 168h} (when ground truth exists) and the \textbf{Prediction Error}.
+  \item \textbf{Verdict PASS} means the predicted drift stays within the safety slope;
+        \textbf{FAIL/REJECT} means the component drifts too fast for 168h --- it should be removed
+        early, before it fails in the field.
+  \item A \textbf{low MAE} (for example delay MAE = 0.03) means the model is very accurate; small MAE
+        relative to the measurement unit = trustworthy forecast.
+\end{itemize}
+
+\subsection{Reading the detailed report}
+\begin{itemize}
+  \item \textbf{Burn-in dataset values} --- the actual measured values across 0h / 24h / 96h / 168h.
+  \item \textbf{Per-parameter checks} --- for every parameter, three methods vote (Z-Score, IQR bounds,
+        Absolute limit). FLAG / CLEAR tells you which method caught the problem.
+  \item \textbf{Why this verdict} --- plain-language reasons, e.g.\
+        \textit{``Parameter 'leakage\_0h' = 7.61 (lot mean 6.79, std 0.26) --- flagged by 2/3 detection
+        methods''}, and recommendations such as \textit{``Investigate oxide integrity --- elevated
+        leakage may indicate gate oxide degradation.''}
+  \item \textbf{Module B drift to 168h} --- predicted value, drift rate per hour, safety slope, and
+        whether the component exceeds the safe drift.
+\end{itemize}
+
+\greenbox{Quick sanity checks to confirm results are sensible}{
+\begin{enumerate}
+  \item PASS + REVIEW + REJECT should equal the total components you uploaded.
+  \item When you click a card, the certificate count should match the card number exactly.
+  \item On sample data, roughly 8\% of parts are marked (REJECT + REVIEW) and the rest are PASS ---
+        matching the seeded defect rate.
+  \item FN should be 0 on the sample set (no defective part escapes).
+  \item Most MAE values should be small relative to the parameter's unit.
+\end{enumerate}}
+
+% =====================================================================
+% SECTION 7
+% =====================================================================
+\section{Common Problems \& Solutions}
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Problem / Message} & \textbf{Solution}\\
+\midrule
+``No data loaded. Upload a CSV/Excel dataset\ldots'' (orange banner, buttons disabled) & Go to \textbf{Upload Data}, load the sample data or upload a file, then return to Analysis Center.\\[2pt]
+``Error: No parametric columns with time-series data found'' & The file must contain \code{[parameter]\_0h} and \code{[parameter]\_168h} columns (example: \code{iddq\_0h}, \code{iddq\_168h}).\\[2pt]
+Login fails & Double-check the demo email/password from Section 3, or register a new account with a strong password.\\[2pt]
+Certificate looks wrong or download blocked & Download the certificate HTML, open it in a browser and use the browser's \textbf{Print $>$ Save as PDF}.\\[2pt]
+Analysis empty / old results shown & Run \textbf{Run Comprehensive Analysis} again after loading data; results refresh each time.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\orbox{Final tip -- the 60-second demo}{
+\begin{enumerate}
+  \item Log in with any demo account.
+  \item Upload Data tab: click \textbf{Generate \& Load Sample Data}.
+  \item Analysis Center tab: click \textbf{Run Comprehensive Analysis}.
+  \item Click the \textbf{REJECT} card to open a Rejection Certificate, then \textbf{View Report} on
+        any row to see the full explanation.
+  \item Open \textbf{Dashboard} to see the score and drift accuracy.
+\end{enumerate}}
+
+\vspace{1.5cm}
+\begin{center}
+{\footnotesize\color{gray} MAVERICK --- AI-Driven Anomaly Detection in Component Burn-In \&
+Screening $|$ Department of Space $|$ ISRO}
+\end{center}
+
+\end{document}

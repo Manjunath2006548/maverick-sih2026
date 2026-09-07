@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MAVERICK - User Guide</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, Helvetica, sans-serif; color: #1e293b; font-size: 11px; line-height: 1.5; margin: 0; }
+
+  /* Cover */
+  .cover { text-align: center; padding-top: 90px; page-break-after: always; }
+  .cover .logo { display: inline-block; border: 3px double #0369a1; color: #0369a1; font-weight: 800; letter-spacing: 4px; padding: 14px 34px; font-size: 22px; border-radius: 14px; }
+  .cover h1 { font-size: 26px; margin: 26px 0 6px; color: #0c4a6e; letter-spacing: 2px; }
+  .cover h2 { font-size: 13px; font-weight: 400; color: #475569; margin: 0 0 40px; }
+  .cover .flag { background: #fff7ed; border: 1px solid #fdba74; color: #c2410c; display: inline-block; padding: 6px 18px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .cover .meta { margin-top: 54px; color: #64748b; font-size: 10px; }
+
+  h1.sec { font-size: 17px; color: #0c4a6e; border-bottom: 2px solid #0369a1; padding-bottom: 4px; margin: 22px 0 10px; page-break-after: avoid; }
+  h2.sub { font-size: 13px; color: #0369a1; margin: 14px 0 6px; page-break-after: avoid; }
+  p { margin: 5px 0; }
+  ul, ol { margin: 6px 0 6px 0; padding-left: 20px; }
+  li { margin: 3px 0; }
+
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 10px; }
+  th, td { border: 1px solid #cbd5e1; padding: 5px 7px; text-align: left; vertical-align: top; }
+  th { background: #e0f2fe; color: #0c4a6e; }
+
+  .box { border-radius: 8px; padding: 9px 12px; margin: 8px 0; page-break-inside: avoid; }
+  .box-blue  { background: #eff6ff; border: 1px solid #93c5fd; }
+  .box-green { background: #f0fdf4; border: 1px solid #86efac; }
+  .box-orange{ background: #fff7ed; border: 1px solid #fdba74; }
+  .box-red   { background: #fef2f2; border: 1px solid #fca5a5; }
+  .box-grey  { background: #f8fafc; border: 1px solid #e2e8f0; }
+  .box b.t { display: block; font-size: 11px; margin-bottom: 3px; }
+
+  .step { margin: 9px 0; }
+  .stepnum { display: inline-block; width: 20px; height: 20px; border-radius: 50%; background: #0369a1; color: #fff; text-align: center; font-weight: 700; font-size: 11px; line-height: 20px; margin-right: 7px; }
+
+  code { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1px 5px; font-family: Consolas, monospace; font-size: 10px; }
+  .mono { font-family: Consolas, monospace; color: #0f172a; }
+  .bestofthebest { font-weight: 700; }
+  .two { display: flex; gap: 10px; }
+  .two > div { flex: 1; }
+  .note { font-size: 10px; color: #64748b; }
+  .pb { page-break-after: always; }
+</style>
+</head>
+<body>
+
+<!-- ================= COVER ================= -->
+<div class="cover">
+  <div class="logo">MAVERICK</div>
+  <h1>USER GUIDE</h1>
+  <h2>AI-Driven Anomaly Detection in Component Burn-In &amp; Screening</h2>
+  <div class="flag">Department of Space | ISRO | Smart India Hackathon 2026</div>
+  <div class="meta">
+    Version 1.0 &nbsp;|&nbsp; For QA Inspectors, Electronic Test Engineers &amp; Evaluators<br/>
+    This guide is for first-time users who have never used the web application.
+  </div>
+</div>
+
+<!-- ================= SECTION 1 ================= -->
+<h1 class="sec">1. About the System</h1>
+<p>
+  <b>MAVERICK</b> is a web application that helps find defective electronic components (ICs / chips / circuit parts)
+  that pass the usual "static limit" screening but still show hidden abnormal behaviour during burn-in testing.
+  Burn-in means running the component at a high temperature (for example 125&#176;C) for a long time, and measuring
+  its electrical parameters at different hours &mdash; <b>0h, 24h, 96h and 168h</b>.
+</p>
+<p>
+  The system has two AI tools (called Modules):
+</p>
+<ul>
+  <li><b>Module A - Dynamic Outlier Detection</b> : Compares each component against its own manufacturing <i>lot</i>.
+      Even if a part is inside the datasheet limit (for example below 50&#181;A), it is flagged if it drifts far away
+      from the average of its lot (e.g. lot average is 10&#181;A but this part shows 45&#181;A).</li>
+  <li><b>Module B - Time-Series Drift Predictor</b> : Takes the 0h and 24h readings, forecasts the 168h value, and
+      checks whether the predicted drift is faster than a safe limit. If it is, the component is flagged for early rejection.</li>
+</ul>
+<div class="box box-green">
+  <b class="t">Why this matters</b>
+  A defective part that escapes screening can fail catastrophically inside a satellite or rocket payload.
+  This system reduces those escapes by catching "latent defects" early and by explaining every decision to the QA inspector.
+</div>
+
+<!-- ================= SECTION 2 ================= -->
+<h1 class="sec">2. How to Start the Application</h1>
+<h2 class="sub">2.1 Starting the server (on the deployment PC)</h2>
+<ol>
+  <li>Open the project folder on your computer.</li>
+  <li>Double-click <code>start.bat</code>. Two windows open automatically:
+      <ul>
+        <li>The <b>Backend server</b> window (FastAPI &ndash; processes the data).</li>
+        <li>The <b>Frontend server</b> window (Next.js &ndash; the webpage you see).</li>
+      </ul></li>
+  <li>Wait for the message <code>Ready</code> in the frontend window.</li>
+</ol>
+<h2 class="sub">2.2 Opening the webpage</h2>
+<ol>
+  <li>Open any browser (Chrome / Edge / Firefox).</li>
+  <li>Go to: <code>http://localhost:3000</code></li>
+  <li>If you are testing from another computer on the same network, use the shared link given with the deployment (the Cloudflare tunnel URL).</li>
+</ol>
+
+<!-- ================= SECTION 3 ================= -->
+<h1 class="sec">3. How to Log In</h1>
+<p>On the first screen you will see the login page with a <b>secure gateway</b> design.</p>
+<ol>
+  <li>Enter your <b>Email</b> and <b>Password</b> in the fields.</li>
+  <li>Click the <b>Login</b> button.</li>
+  <li>If a field is empty or the password is wrong, a red message appears. Check and try again.</li>
+</ol>
+<div class="box box-blue">
+  <b class="t">Demo accounts (use any one of these)</b>
+  <table>
+    <tr><th>Role</th><th>Email</th><th>Password</th><th>What this account can see</th></tr>
+    <tr><td>Admin</td><td class="mono">admin@isro.gov.in</td><td class="mono">Admin@123!</td><td>Everything</td></tr>
+    <tr><td>QA Inspector</td><td class="mono">qa@isro.gov.in</td><td class="mono">Qa@123!</td><td>Everything</td></tr>
+    <tr><td>Engineer</td><td class="mono">engineer@isro.gov.in</td><td class="mono">Eng@123!</td><td>Everything</td></tr>
+  </table>
+  <p class="note">
+    Passwords are strong on purpose. New registrations must also use a strong password
+    (at least 8 characters, upper-case letter, lower-case letter, number and a special symbol).
+  </p>
+</div>
+<p>
+  After login you land on the <b>Dashboard (Mission Control)</b> page. On the left there is a menu
+  (sidebar) with the pages: <b>Dashboard, Upload Data, Analysis Center</b> and your <b>account info</b>.
+</p>
+
+<!-- ================= SECTION 4 ================= -->
+<h1 class="sec">4. Step-by-Step: How to Test the System</h1>
+<p>Follow these steps in order. The whole test takes about 2&ndash;3 minutes.</p>
+
+<div class="step">
+  <span class="stepnum">1</span><b>Load data</b> &mdash; go to <b>Upload Data</b> in the left menu.
+</div>
+<div class="box box-grey">
+  You have two simple ways:
+  <ul>
+    <li><b>Option 1 (easiest) - Sample Data tab:</b> click the <b>Generate &amp; Load Sample Data</b> button.
+        This creates 200 realistic burn-in components across 5 lots with about 8% known defects.</li>
+    <li><b>Option 2 - CSV / Excel Upload tab:</b> click inside the dashed box, choose your own <code>.csv</code> or <code>.xlsx</code> file.
+        The file should have at least: <span class="mono">component_id, lot_id, [parameter]_0h, [parameter]_24h, [parameter]_96h, [parameter]_168h</span>.
+        The standard parameters are <code>iddq, leakage, delay</code> and <code>supply_current</code>.</li>
+  </ul>
+  <p class="note">After loading you see a data preview (columns and first rows) and a confirmation message with the record count.</p>
+</div>
+
+<div class="step">
+  <span class="stepnum">2</span><b>Run the analysis</b> &mdash; go to <b>Analysis Center</b> in the left menu.
+</div>
+<p>You will see green text <i>"Dataset loaded: X components across Y lots - ready to analyze"</i>.
+If data is missing, an orange warning appears and runs are blocked until you load data.</p>
+<p>On the left there are four method tabs. Click <b>Comprehensive</b> first (it runs everything in one click):</p>
+<ol>
+  <li>Keep the default <b>Z-Score Threshold = 1.5</b> and <b>IQR Multiplier = 1.5</b> (recommended).</li>
+  <li>Click the <b>Run Comprehensive Analysis</b> button.</li>
+  <li>Wait a few seconds. The results appear below, including Module A verdicts, an <b>Anomaly Detection Score</b> and (after it finishes training) Module B drift predictions.</li>
+</ol>
+<div class="box box-orange">
+  <b class="t">Alternative (optional) - run the two modules separately</b>
+  <p>
+    In the same Analysis Center you can also use <b>Module A: Outlier</b> (lot-based outlier detection),
+    <b>Module B: Drift</b> (Train Models + Run Batch Prediction), and <b>Single Prediction</b>
+    (type a component's 0h and 24h values manually to predict its 168h value at once).
+  </p>
+</div>
+
+<div class="step">
+  <span class="stepnum">3</span><b>Look at the results and certificates</b> &mdash; the results already appear on screen.
+</div>
+<ol>
+  <li><b>Stat cards :</b> PASS / REVIEW / REJECT counts. Clicking a card <i>opens a certificate</i> underneath with the exact components.</li>
+  <li><b>Detailed report :</b> in the results table, click <b>View Report</b> (or click a PASS/REVIEW/REJECT badge). A report panel slides in from the right showing raw test values at 0h/24h/96h/168h, per-parameter outlier checks, why-the-verdict reasons, and drift predictions to 168h.</li>
+  <li><b>Certificate download :</b> inside the certificate, click <b>Download Certificate</b> to save an official-looking certificate file. Open it in a browser and print / save as PDF for a PDF copy.</li>
+</ol>
+
+<div class="step">
+  <span class="stepnum">4</span><b>Check the Dashboard</b> &mdash; go to <b>Dashboard</b> in the left menu.
+</div>
+<p>The mission-control screen summarises everything: total components, lots analyzed, anomalies found,
+drift models trained, the Module A PASS/REVIEW/REJECT split, the Anomaly Detection Score, and per-parameter
+drift accuracy (MAE / RMSE / R2) so you can judge how trustworthy the predictions are.</p>
+
+<!-- ================= SECTION 5 ================= -->
+<h1 class="sec">5. What Output You Will Get</h1>
+<table>
+  <tr><th>Feature</th><th>Where to see it</th><th>What it shows</th></tr>
+  <tr><td>Data preview &amp; confirmation</td><td>Upload Data page</td><td>File name, record count, column list, first rows of your file</td></tr>
+  <tr><td>Classification summary cards</td><td>Analysis Center</td><td>Total components and counts of PASS / REVIEW / REJECT</td></tr>
+  <tr><td>Anomaly Detection Score</td><td>Analysis Center &amp; Dashboard</td><td>Score in % with TP / FP / TN / FN and Recall (sensitivity)</td></tr>
+  <tr><td>Component results table</td><td>Analysis Center (Comprehensive / Module A)</td><td>Each component: lot, classification badge, risk score, anomalies count, "View Report"</td></tr>
+  <tr><td>Certificate (Acceptance / Rejection / Manual Review)</td><td>After clicking a PASS / REVIEW / REJECT card</td><td>Certificate title, covered component list, test checklist, QA sign-off, reference number, Download button</td></tr>
+  <tr><td>Detailed component report</td><td>Click "View Report"</td><td>Raw 0h/24h/96h/168h values, per-parameter Module A analysis (z-score / IQR / absolute-limit flags), reasons &amp; recommendations, Module B predicted 168h, safety-slope check</td></tr>
+  <tr><td>Drift accuracy metrics</td><td>Module B tab &amp; Dashboard</td><td>Mean Absolute Error (MAE), RMSE, R2, MAPE per parameter, plus PASS/FAIL counts per prediction</td></tr>
+  <tr><td>Single prediction</td><td>Single Prediction tab</td><td>Predicted 168h value, drift rate, safety slope, exceed flag, recommendation, step-by-step explanation</td></tr>
+</table>
+
+<!-- ================= SECTION 6 ================= -->
+<h1 class="sec">6. What You Can Observe From the Output</h1>
+<h2 class="sub">6.1 Reading the classification cards</h2>
+<ul>
+  <li><b>PASS (green)</b> - component is normal: all parameters are close to its lot average. Safe to use in the payload.</li>
+  <li><b>REVIEW (orange)</b> - a few parameters deviate moderately. Needs the QA inspector's manual check before a final decision.</li>
+  <li><b>REJECT (red)</b> - clearly abnormal values (outliers) detected. Must <b>not</b> be deployed.</li>
+</ul>
+
+<h2 class="sub">6.2 Reading the Anomaly Detection Score</h2>
+<div class="box box-blue">
+  <b class="t">Formula: Score = max(0, (TP + TN - 10 x FN - 1 x FP) / Total)</b>
+  <ul>
+    <li><b>TP</b> = defective parts that were correctly flagged. <b>TN</b> = good parts that were correctly passed.</li>
+    <li><b>FN</b> = defective parts that escaped (missed). A missing defective part is <b>catastrophic</b>, so one FN subtracts the value of 10 correct results.</li>
+    <li><b>FP</b> = good parts wrongly flagged; costs only 1 point (safe but wasteful).</li>
+  </ul>
+  <p>Best scores are near 100%. On the included sample data the system typically scores around <b>81% with a 100% recall (zero escapes, FN = 0)</b> - very desirable in space applications.</p>
+</div>
+
+<h2 class="sub">6.3 Reading the drift (Module B) table</h2>
+<ul>
+  <li>Each row shows the <b>parameter</b>, its 0h and 24h inputs, the <b>Predicted 168h</b> value, the <b>Actual 168h</b> (when ground truth exists) and the <b>Prediction Error</b>.</li>
+  <li><b>Verdict PASS</b> means the predicted drift stays within the safety slope; <b>FAIL/REJECT</b> means the component drifts too fast for 168h - it should be removed early, before it fails in the field.</li>
+  <li>A <b>low MAE</b> (for example delay MAE = 0.03) means the model is very accurate; small MAE relative to the measurement unit = trustworthy forecast.</li>
+</ul>
+
+<h2 class="sub">6.4 Reading the detailed report</h2>
+<ul>
+  <li><b>Burn-in dataset values</b> - the actual measured values across 0h / 24h / 96h / 168h.</li>
+  <li><b>Per-parameter checks</b> - for every parameter, three methods vote (Z-Score, IQR bounds, Absolute limit). FLAG / CLEAR tells you which method caught the problem.</li>
+  <li><b>Why this verdict</b> - plain-language reasons, e.g. <i>"Parameter 'leakage_0h' = 7.61 (lot mean 6.79, std 0.26) - flagged by 2/3 detection methods"</i>, and recommendations such as <i>"Investigate oxide integrity - elevated leakage may indicate gate oxide degradation."</i></li>
+  <li><b>Module B drift to 168h</b> - predicted value, drift rate per hour, safety slope, and whether the component exceeds the safe drift.</li>
+</ul>
+
+<div class="box box-green">
+  <b class="t">Quick sanity checks to confirm results are sensible</b>
+  <ol>
+    <li>PASS + REVIEW + REJECT should equal the total components you uploaded.</li>
+    <li>When you click a card, the certificate count should match the card number exactly.</li>
+    <li>On sample data, roughly 8% of parts are marked (REJECT + REVIEW) and the rest are PASS - matching the seeded defect rate.</li>
+    <li>FN should be 0 on the sample set (no defective part escapes).</li>
+    <li>Most MAE values should be small relative to the parameter's unit.</li>
+  </ol>
+</div>
+
+<!-- ================= SECTION 7 ================= -->
+<h1 class="sec">7. Common Problems &amp; Solutions</h1>
+<table>
+  <tr><th>Problem / Message</th><th>Solution</th></tr>
+  <tr><td>"No data loaded. Upload a CSV/Excel dataset..." (orange banner, buttons disabled)</td><td>Go to <b>Upload Data</b>, load the sample data or upload a file, then return to Analysis Center.</td></tr>
+  <tr><td>"Error: No parametric columns with time-series data found"</td><td>The file must contain <code>[parameter]_0h</code> and <code>[parameter]_168h</code> columns (example: <code>iddq_0h, iddq_168h</code>).</td></tr>
+  <tr><td>Login fails</td><td>Double-check the demo email/password from Section 3, or register a new account with a strong password.</td></tr>
+  <tr><td>Certificate looks wrong or download blocked</td><td>Download the certificate HTML, open it in a browser and use the browser's <b>Print &gt; Save as PDF</b>.</td></tr>
+  <tr><td>Analysis empty / old results shown</td><td>Run <b>Run Comprehensive Analysis</b> again after loading data; results refresh each time.</td></tr>
+</table>
+
+<div class="box box-orange pb" style="page-break-before:always;">
+  <b class="t">Final tip - the 60-second demo</b>
+  <ol>
+    <li>Log in with any demo account.</li>
+    <li>Upload Data tab: click <b>Generate &amp; Load Sample Data</b>.</li>
+    <li>Analysis Center tab: click <b>Run Comprehensive Analysis</b>.</li>
+    <li>Click the <b>REJECT</b> card to open a Rejection Certificate, then <b>View Report</b> on any row to see the full explanation.</li>
+    <li>Open <b>Dashboard</b> to see the score and drift accuracy.</li>
+  </ol>
+</div>
+
+<p class="note" style="margin-top:24px;text-align:center;">
+  MAVERICK - AI-Driven Anomaly Detection in Component Burn-In &amp; Screening | Department of Space | ISRO
+</p>
+
+</body>
+</html>
