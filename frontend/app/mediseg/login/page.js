@@ -1,8 +1,6 @@
 'use client';
 
-import '../../lib/maverick-api';
-
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -20,123 +18,107 @@ function checkPasswordStrength(pw) {
   return { level: 'Strong', color: 'bg-green-500', checks, passed };
 }
 
-export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true);
+export default function MediSegLogin() {
+  const [mode, setMode] = useState('login'); // login | register
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState('engineer');
+  const [role, setRole] = useState('Operator');
+  const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [pwStrength, setPwStrength] = useState(null);
-  const [showPw, setShowPw] = useState(false);
   const router = useRouter();
 
-  const onPasswordChange = useCallback((val) => {
+  const onPasswordChange = (val) => {
     setPassword(val);
-    if (!isLogin && val.length > 0) {
-      setPwStrength(checkPasswordStrength(val));
-    } else {
-      setPwStrength(null);
-    }
-  }, [isLogin]);
-
-  const isStrongEnough = (pw) => {
-    const s = checkPasswordStrength(pw);
-    return s.passed >= 4;
+    setPwStrength(mode === 'register' && val.length > 0 ? checkPasswordStrength(val) : null);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
 
-    if (!isLogin && !isStrongEnough(password)) {
-      setError('Password must be at least 8 characters with uppercase, lowercase, number, and special character');
+    if (mode === 'register') {
+      if (!name.trim()) return setError('Please enter your full name.');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError('Enter a valid email address.');
+      const strength = checkPasswordStrength(password);
+      if (strength.passed < 4)
+        return setError('Password must be at least 8 characters with uppercase, lowercase, number, and special character.');
+      setLoading(true);
+      setTimeout(() => {
+        localStorage.setItem('mediseg_user', JSON.stringify({ name, email, role }));
+        setLoading(false);
+        setMode('login');
+        setError('');
+        alert('Account created! Please sign in.');
+      }, 700);
       return;
     }
 
-    setLoading(true);
-
-    try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const body = isLogin
-        ? { email, password }
-        : { email, password, name, role };
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Authentication failed');
-      }
-
-      if (isLogin) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        router.push('/dashboard');
-      } else {
-        setIsLogin(true);
-        setError('');
-        alert('Registration successful! Please sign in.');
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    // login
+    if (!email.trim() || !password) {
+      setError('Please enter your email and password.');
+      return;
     }
+    setLoading(true);
+    const name = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    setTimeout(() => {
+      localStorage.setItem('mediseg_user', JSON.stringify({ name, email, role: 'Operator' }));
+      setLoading(false);
+      router.push('/mediseg');
+    }, 800);
   };
 
   return (
-    <div className="min-h-screen bg-isro-darker flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen bg-isro-darker flex items-center justify-center relative overflow-hidden py-10">
       {/* Themed background image */}
       <div className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url(/images/login-bg.svg)' }} />
-      {/* Dark overlay to keep text readable */}
+        style={{ backgroundImage: 'url(/images/mediseg-bg.svg)' }} />
       <div className="absolute inset-0 bg-isro-darker/60" />
-
       {/* Background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-isro-blue/8 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/3 w-80 h-80 bg-isro-orange/8 rounded-full blur-3xl" />
-        <div className="absolute inset-0 opacity-[0.02]"
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl" />
+        <div className="absolute inset-0 opacity-[0.03]"
           style={{
-            backgroundImage: `linear-gradient(rgba(77,166,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(77,166,255,0.3) 1px, transparent 1px)`,
+            backgroundImage: `linear-gradient(rgba(45,212,191,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(45,212,191,0.3) 1px, transparent 1px)`,
             backgroundSize: '50px 50px'
-          }}
-        />
+          }} />
       </div>
 
       <div className="relative z-10 w-full max-w-md px-6">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-isro-blue to-isro-orange flex items-center justify-center font-bold text-white text-xl mb-4 shadow-xl shadow-isro-blue/30">
-            ISRO
-          </div>
-          <h1 className="text-2xl font-bold text-white">MAVERICK</h1>
-          <p className="text-sm text-gray-500 mt-1">Burn-In Anomaly Detection System</p>
+        <div className="text-center mb-7">
+          <Link href="/mediseg/intro" className="inline-flex items-center gap-3 mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center font-black text-white text-xl shadow-xl shadow-emerald-500/25">
+              MS
+            </div>
+            <div className="text-left">
+              <h1 className="text-2xl font-bold text-white leading-tight">MediSeg</h1>
+              <p className="text-xs text-gray-500 font-mono">Biomedical Waste Management</p>
+            </div>
+          </Link>
+          <p className="text-sm text-gray-400">Sign in to operate the autonomous rover</p>
         </div>
 
-        {/* Login Form */}
+        {/* Form card */}
         <div className="glass-card rounded-2xl p-8">
-          <div className="flex mb-6 bg-isro-dark rounded-lg p-1">
+          {/* Tabs */}
+          <div className="flex mb-6 bg-isro-dark rounded-lg p-1 border border-white/5">
             <button
               type="button"
-              onClick={() => { setIsLogin(true); setError(''); setPwStrength(null); }}
+              onClick={() => { setMode('login'); setError(''); setPwStrength(null); }}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                isLogin ? 'bg-isro-blue text-white shadow' : 'text-gray-500 hover:text-gray-300'
+                mode === 'login' ? 'bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow' : 'text-gray-500 hover:text-gray-300'
               }`}>
               Sign In
             </button>
             <button
               type="button"
-              onClick={() => { setIsLogin(false); setError(''); }}
+              onClick={() => { setMode('register'); setError(''); setPwStrength(null); }}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                !isLogin ? 'bg-isro-blue text-white shadow' : 'text-gray-500 hover:text-gray-300'
+                mode === 'register' ? 'bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow' : 'text-gray-500 hover:text-gray-300'
               }`}>
               Register
             </button>
@@ -149,7 +131,7 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
-            {!isLogin && (
+            {mode === 'register' && (
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1.5">Full Name</label>
                 <input
@@ -157,9 +139,8 @@ export default function LoginPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   autoComplete="off"
-                  className="w-full px-4 py-3 bg-isro-dark border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-isro-lightblue/50 focus:ring-1 focus:ring-isro-lightblue/20 transition-all"
-                  placeholder="Enter your name"
-                  required
+                  className="w-full px-4 py-3 bg-isro-dark border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-teal-400/50 focus:ring-1 focus:ring-teal-400/20 transition-all"
+                  placeholder="Dr. A. Sharma"
                 />
               </div>
             )}
@@ -171,9 +152,8 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="off"
-                className="w-full px-4 py-3 bg-isro-dark border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-isro-lightblue/50 focus:ring-1 focus:ring-isro-lightblue/20 transition-all"
-                placeholder="name@isro.gov.in"
-                required
+                className="w-full px-4 py-3 bg-isro-dark border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-teal-400/50 focus:ring-1 focus:ring-teal-400/20 transition-all"
+                placeholder="you@mediseg.in"
               />
             </div>
 
@@ -185,9 +165,8 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => onPasswordChange(e.target.value)}
                   autoComplete="new-password"
-                  className="w-full px-4 py-3 pr-12 bg-isro-dark border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-isro-lightblue/50 focus:ring-1 focus:ring-isro-lightblue/20 transition-all"
+                  className="w-full px-4 py-3 pr-12 bg-isro-dark border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-teal-400/50 focus:ring-1 focus:ring-teal-400/20 transition-all"
                   placeholder="Enter password"
-                  required
                 />
                 <button
                   type="button"
@@ -198,8 +177,8 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              {/* Password Strength Bar — only in Register mode */}
-              {!isLogin && pwStrength && (
+              {/* Password strength — only in Register mode */}
+              {mode === 'register' && pwStrength && (
                 <div className="mt-2">
                   <div className="flex gap-1 mb-1">
                     {[1, 2, 3, 4, 5].map((i) => (
@@ -216,16 +195,10 @@ export default function LoginPage() {
                     pwStrength.passed <= 4 ? 'text-orange-400' : 'text-green-400'
                   }`}>
                     {pwStrength.level}
-                    {pwStrength.passed < 4 && (
-                      <span className="text-gray-500 ml-2 font-normal">
-                        — need {['Uppercase', 'Lowercase', 'Number', 'Special char (!@#$)', '8+ chars']
-                          .filter((_, i) => !pwStrength.passed || i < pwStrength.passed - 1).length > 0
-                          ? `${4 - pwStrength.passed} more requirement${4 - pwStrength.passed > 1 ? 's' : ''}`
-                          : ''}
-                      </span>
-                    )}
-                    {pwStrength.passed >= 4 && (
+                    {pwStrength.passed >= 4 ? (
                       <span className="text-gray-500 ml-2 font-normal">— meets all requirements</span>
+                    ) : (
+                      <span className="text-gray-500 ml-2 font-normal">— need {4 - pwStrength.passed} more</span>
                     )}
                   </p>
                   <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5">
@@ -234,7 +207,7 @@ export default function LoginPage() {
                       { key: 'upper', label: 'Uppercase letter' },
                       { key: 'lower', label: 'Lowercase letter' },
                       { key: 'digit', label: 'Number (0-9)' },
-                      { key: 'special', label: 'Special character (!@#$...)' },
+                      { key: 'special', label: 'Special char (!@#$)' },
                     ].map((c) => (
                       <span key={c.key} className={`text-[10px] flex items-center gap-1 ${
                         pwStrength.checks[c.key] ? 'text-green-400' : 'text-gray-500'
@@ -247,16 +220,16 @@ export default function LoginPage() {
               )}
             </div>
 
-            {!isLogin && (
+            {mode === 'register' && (
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1.5">Role</label>
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-4 py-3 bg-isro-dark border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-isro-lightblue/50 transition-all">
-                  <option value="engineer">Engineer</option>
-                  <option value="qa_inspector">QA Inspector</option>
-                  <option value="admin">Administrator</option>
+                  className="w-full px-4 py-3 bg-isro-dark border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-teal-400/50 transition-all">
+                  <option value="Admin">Facility Manager / Admin</option>
+                  <option value="Operator">Rover Operator</option>
+                  <option value="QA / Compliance">QA / Compliance Officer</option>
                 </select>
               </div>
             )}
@@ -264,7 +237,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-isro-blue to-blue-500 text-white font-semibold rounded-lg hover:opacity-90 transition-all shadow-lg shadow-isro-blue/25 disabled:opacity-50 disabled:cursor-not-allowed">
+              className="w-full py-3 bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-semibold rounded-lg hover:opacity-90 transition-all shadow-lg shadow-teal-500/25 disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -273,22 +246,23 @@ export default function LoginPage() {
                   </svg>
                   Processing...
                 </span>
-              ) : isLogin ? 'Sign In' : 'Create Account'}
+              ) : mode === 'login' ? 'Sign In' : 'Create Account'}
             </button>
           </form>
 
-          {isLogin && (
-            <div className="mt-5 pt-5 border-t border-white/5">
-              <p className="text-[10px] text-gray-500 text-center">
-                Contact your system administrator for account credentials
-              </p>
-            </div>
-          )}
+          <p className="mt-5 pt-4 border-t border-white/5 text-[10px] text-gray-600 text-center">
+            New here? Switch to "Register" to create an account — or sign in with your facility credentials.
+          </p>
         </div>
 
-        <Link href="/" className="block text-center mt-6 text-sm text-gray-500 hover:text-gray-300 transition-colors">
-          Back to Home
-        </Link>
+        <div className="flex items-center justify-between mt-6 text-sm">
+          <Link href="/mediseg/intro" className="text-gray-500 hover:text-gray-300 transition-colors">
+            ← Back to Intro
+          </Link>
+          <Link href="/mediseg/presentation" className="text-gray-500 hover:text-gray-300 transition-colors">
+            Concept Deck →
+          </Link>
+        </div>
       </div>
     </div>
   );

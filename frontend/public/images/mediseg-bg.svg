@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1080" width="1600" height="1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#04100d"/>
+      <stop offset="55%" stop-color="#06251e"/>
+      <stop offset="100%" stop-color="#04100d"/>
+    </linearGradient>
+    <radialGradient id="coreGlow" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#0f766e" stop-opacity="0.35"/>
+      <stop offset="55%" stop-color="#0d4d43" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#04100d" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="trace" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2dd4bf" stop-opacity="0.05"/>
+      <stop offset="50%" stop-color="#2dd4bf" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#2dd4bf" stop-opacity="0.05"/>
+    </linearGradient>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#2dd4bf" stroke-opacity="0.035" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="roverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14b8a6" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.12"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="1080" fill="url(#bg)"/>
+  <rect width="1600" height="1080" fill="url(#coreGlow)"/>
+  <rect width="1600" height="1080" fill="url(#grid)"/>
+
+  <!-- Central autonomous rover (top-down silhouette with waste compartments) -->
+  <g transform="translate(800,420)" fill="none">
+    <!-- cast shadow / floor ring -->
+    <ellipse cx="0" cy="30" rx="330" ry="90" fill="#000000" opacity="0.25"/>
+    <!-- body -->
+    <rect x="-130" y="-190" width="260" height="380" rx="40" stroke="url(#roverGrad)" stroke-width="3"/>
+    <rect x="-110" y="-170" width="220" height="340" rx="28" stroke="#2dd4bf" stroke-opacity="0.18" stroke-width="1.5"/>
+
+    <!-- 5 colour-coded waste compartments (BMWM 2018) -->
+    <g stroke-width="2">
+      <rect x="-90" y="-150" width="64" height="90" rx="10" stroke="#fbbf24" stroke-opacity="0.75"/>
+      <rect x="-16" y="-150" width="66" height="90" rx="10" stroke="#ef4444" stroke-opacity="0.75"/>
+      <rect x="60" y="-150" width="60" height="90" rx="10" stroke="#e2e8f0" stroke-opacity="0.6"/>
+      <rect x="-90" y="-50" width="64" height="110" rx="10" stroke="#3b82f6" stroke-opacity="0.75"/>
+      <rect x="-16" y="-50" width="66" height="110" rx="10" stroke="#475569" stroke-opacity="0.85"/>
+    </g>
+
+    <!-- lid line -->
+    <line x1="-110" y1="-152" x2="128" y2="-152" stroke="#2dd4bf" stroke-opacity="0.2" stroke-width="1.5"/>
+
+    <!-- sensor turret -->
+    <circle r="34" stroke="#2dd4bf" stroke-opacity="0.55" stroke-width="2"/>
+    <circle r="14" fill="#2dd4bf" fill-opacity="0.12" stroke="#2dd4bf" stroke-opacity="0.5" stroke-width="1.5"/>
+    <circle r="6" fill="#fbbf24" opacity="0.8">
+      <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- LiDAR sweep arc -->
+    <path d="M 34 0 A 34 34 0 0 1 -17 29" stroke="#2dd4bf" stroke-opacity="0.3" stroke-width="1.5" stroke-dasharray="4 6"/>
+  </g>
+
+  <!-- orbital rings (patrol path) -->
+  <g fill="none" stroke="#2dd4bf" stroke-opacity="0.12" stroke-width="1.5">
+    <circle cx="800" cy="420" r="430"/>
+    <circle cx="800" cy="420" r="430" stroke-dasharray="4 22" stroke-opacity="0.2"/>
+    <circle cx="800" cy="420" r="560" stroke-opacity="0.07"/>
+    <ellipse cx="800" cy="420" rx="640" ry="150" stroke-opacity="0.1"/>
+    <ellipse cx="800" cy="420" rx="640" ry="150" transform="rotate(60 800 420)" stroke-opacity="0.06"/>
+    <ellipse cx="800" cy="420" rx="640" ry="150" transform="rotate(-60 800 420)" stroke-opacity="0.06"/>
+  </g>
+
+  <!-- navigation way-points (hospital rooms) -->
+  <g fill="#2dd4bf" opacity="0.28">
+    <circle cx="270" cy="150" r="5"/><circle cx="1330" cy="150" r="5"/>
+    <circle cx="200" cy="720" r="5"/><circle cx="1400" cy="720" r="5"/>
+  </g>
+  <g fill="none" stroke="#2dd4bf" stroke-opacity="0.06" stroke-width="1.5">
+    <path d="M 270 150 L 800 420 L 1330 150"/>
+    <path d="M 200 720 L 800 420 L 1400 720"/>
+  </g>
+
+  <!-- medical cross accents -->
+  <g stroke="#2dd4bf" stroke-opacity="0.14" stroke-width="2" fill="none">
+    <path d="M 1400 70 V 98 M 1386 84 H 1414"/>
+    <path d="M 200 980 V 1008 M 186 994 H 214"/>
+  </g>
+
+  <!-- trace lines -->
+  <g fill="none" stroke="url(#trace)" stroke-width="2">
+    <path d="M -60 220 L 120 220 L 160 180 L 250 180"/>
+    <path d="M -60 680 L 170 680 L 210 720 L 260 720"/>
+    <path d="M 1660 240 L 1450 240 L 1405 200 L 1350 200"/>
+    <path d="M 1660 660 L 1440 660 L 1395 700 L 1350 700"/>
+    <path d="M 250 180 L 250 340 L 320 340"/>
+    <path d="M 1350 200 L 1350 340 L 1280 340"/>
+  </g>
+  <g fill="#2dd4bf" opacity="0.3">
+    <circle cx="120" cy="220" r="4"/><circle cx="170" cy="680" r="4"/>
+    <circle cx="1450" cy="240" r="4"/><circle cx="1440" cy="660" r="4"/>
+  </g>
+
+  <!-- QR / data hash block (traceability) -->
+  <g transform="translate(1380,470)" fill="none" stroke="#2dd4bf" stroke-opacity="0.3" stroke-width="2">
+    <rect x="0" y="0" width="52" height="52" rx="4"/>
+    <path d="M 8 8 H 20 V 20 H 8 Z M 32 8 H 44 V 20 H 32 Z M 8 32 H 20 V 44 H 8 Z"/>
+    <path d="M 26 8 H 28 M 8 26 H 30 V 28 H 8 M 26 26 H 44 V 28 H 26 M 24 30 V 32 M 8 40 H 44"/>
+  </g>
+
+  <!-- corner accents -->
+  <g fill="none" stroke="#2dd4bf" stroke-opacity="0.14" stroke-width="1.5">
+    <rect x="60" y="60" width="34" height="34" rx="3"/>
+    <rect x="84" y="74" width="6" height="6"/>
+    <rect x="1506" y="986" width="34" height="34" rx="3"/>
+    <rect x="1506" y="986" width="10" height="10"/>
+    <rect x="1506" y="60" width="34" height="34" rx="3"/>
+    <rect x="1522" y="76" width="4" height="4"/>
+  </g>
+</svg>

@@ -1,5 +1,7 @@
 'use client';
 
+import '../../lib/maverick-api';
+
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';

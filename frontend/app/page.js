@@ -45,6 +45,14 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <Link href="/mediseg/intro"
+              className="px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-lg hover:opacity-90 transition-all shadow-lg shadow-teal-500/25">
+              MediSeg Prototype 🏥
+            </Link>
+            <Link href="/mediseg/presentation"
+              className="px-5 py-2.5 text-sm font-medium text-gray-300 hover:text-white transition-colors border border-white/10 rounded-lg">
+              Concept Deck
+            </Link>
             <Link href="/login"
               className="px-5 py-2.5 text-sm font-medium text-gray-300 hover:text-white transition-colors">
               Sign In
