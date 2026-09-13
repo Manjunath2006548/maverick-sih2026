@@ -39,7 +39,7 @@ export default function Sidebar({ user, active }) {
             ISRO
           </div>
           <div>
-            <h2 className="text-sm font-bold text-white">MAVERICK</h2>
+            <h2 className="text-sm font-bold text-white">PRISMA</h2>
             <p className="text-[10px] text-gray-500 font-mono">v1.0.0</p>
           </div>
         </div>

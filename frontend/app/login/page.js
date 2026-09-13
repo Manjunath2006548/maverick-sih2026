@@ -117,7 +117,7 @@ export default function LoginPage() {
           <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-isro-blue to-isro-orange flex items-center justify-center font-bold text-white text-xl mb-4 shadow-xl shadow-isro-blue/30">
             ISRO
           </div>
-          <h1 className="text-2xl font-bold text-white">MAVERICK</h1>
+          <h1 className="text-2xl font-bold text-white">PRISMA</h1>
           <p className="text-sm text-gray-500 mt-1">Burn-In Anomaly Detection System</p>
         </div>
 

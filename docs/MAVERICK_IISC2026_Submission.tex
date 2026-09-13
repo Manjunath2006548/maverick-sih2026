@@ -1,0 +1,620 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---------- Packages ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{mdframed}
+\usepackage{eso-pic}
+
+% ---------- Page border on every page (full 4 sides) ----------
+\AddToShipoutPictureBG{%
+  \AtPageLowerLeft{%
+    \setlength{\fboxrule}{2pt}\setlength{\fboxsep}{0pt}%
+    \color{isroblue}%
+    \fbox{\parbox[c][\dimexpr\paperheight-2\fboxrule][c]{\dimexpr\paperwidth-2\fboxrule}{}}%
+  }%
+}
+
+% ---------- Colours (ISRO theme) ----------
+\definecolor{isroblue}{RGB}{0,80,160}
+\definecolor{isroorange}{RGB}{230,110,20}
+\definecolor{accent}{RGB}{40,116,240}
+
+% ---------- Meta ----------
+\hypersetup{
+  colorlinks=true,
+  linkcolor=accent,
+  urlcolor=accent,
+  pdftitle={MAVERICK: ISRO Burn-In Anomaly Detection System},
+  pdfauthor={Manjunath Bhaskar Hebbar}
+}
+
+% ---------- Header / Footer ----------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{isroblue}\textbf{MAVERICK} -- ISRO Burn-In Anomaly Detection}
+\fancyhead[R]{\small IISC 2026 Submission}
+\fancyfoot[C]{\thepage}
+
+% ---------- Section formatting ----------
+\titleformat{\section}{\Large\bfseries\color{isroblue}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{accent}}{\thesubsection.}{0.6em}{}
+
+% ---------- Custom box ----------
+\newmdenv[linecolor=isroblue,backgroundcolor=isroblue!8,linewidth=1pt,roundcorner=6pt]{infobox}
+
+% ---------- User-guide helper colours ----------
+\definecolor{boxorangebg}{RGB}{255,247,237}
+\definecolor{boxorangebd}{RGB}{253,186,116}
+\definecolor{boxgreenbg}{RGB}{240,253,244}
+\definecolor{boxgreenbd}{RGB}{134,239,172}
+\definecolor{boxbluebg}{RGB}{239,246,255}
+\definecolor{boxbluebd}{RGB}{147,197,253}
+\definecolor{boxgreybg}{RGB}{248,250,252}
+\definecolor{boxgreybd}{RGB}{226,232,240}
+
+% ---------- User-guide helper commands ----------
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\whatbox}[2]{%
+  \begin{center}\begin{minipage}{0.96\textwidth}%
+  \fcolorbox{boxbluebd}{boxbluebg}{\parbox{\dimexpr\textwidth-14pt}{%
+    \textbf{\textcolor{isroblue}{#1}}\\[2pt]#2}}\end{minipage}\end{center}}
+\newcommand{\greenbox}[2]{%
+  \begin{center}\begin{minipage}{0.96\textwidth}%
+  \fcolorbox{boxgreenbd}{boxgreenbg}{\parbox{\dimexpr\textwidth-14pt}{%
+    \textbf{\textcolor{green!50!black}{#1}}\\[2pt]#2}}\end{minipage}\end{center}}
+\newcommand{\orbox}[2]{%
+  \begin{center}\begin{minipage}{0.96\textwidth}%
+  \fcolorbox{boxorangebd}{boxorangebg}{\parbox{\dimexpr\textwidth-14pt}{%
+    \textbf{\textcolor{orange!70!black}{#1}}\\[2pt]#2}}\end{minipage}\end{center}}
+\newcommand{\grybox}[2]{%
+  \begin{center}\begin{minipage}{0.96\textwidth}%
+  \fcolorbox{boxgreybd}{boxgreybg}{\parbox{\dimexpr\textwidth-14pt}{%
+    \textbf{\textcolor{gray}{#1}}\\[2pt]#2}}\end{minipage}\end{center}}
+
+\begin{document}
+
+% ============================================================
+% TITLE PAGE
+% ============================================================
+\begin{titlepage}
+  \centering
+  \vspace*{1cm}
+
+  {\Large\textcolor{isroorange}{\textbf{Indian Space Association (ISpA)}}}\\[0.3cm]
+  {\large India International Space Conclave (IISC) 2026}\\[0.3cm]
+  {\large \textit{Call for Student Innovations \& Projects}}\\[2.5cm]
+
+  {\Huge\bfseries\color{isroblue} MAVERICK}\\[0.8cm]
+  {\LARGE ISRO Burn-In Anomaly Detection System}\\[0.5cm]
+  {\large \textbf{AI-Driven Anomaly Detection in Component Burn-In \& Screening}}\\[2.2cm]
+
+  \begin{infobox}
+    \centering
+    \textbf{Project Report} -- Submitted under the
+    \textit{Smart India Hackathon 2026 (SIH 2026) -- Smart Automation}\\
+    Theme | Department of Space / Indian Space Research Organisation
+  \end{infobox}
+
+  \vspace{1.5cm}
+  \begin{tabular}{rl}
+    \textbf{Team / Submitter:} & Manjunath Bhaskar Hebbar \\
+    \textbf{Institution:}      & Presidency University, Bengaluru \\
+    \textbf{Focus:}            & VLSI Design \& Embedded Systems (B.Tech) \\
+    \textbf{Contact:}          & \href{mailto:hebbarmanjunath13@gmail.com}{hebbarmanjunath13@gmail.com} \\
+    \textbf{Live Demo:}        & \url{https://isro-burnin-detection.vercel.app} \\
+  \end{tabular}
+
+  \vfill
+  {\large \textbf{Submission Deadline:} 30 September 2026}\\[0.4cm]
+  {\large Submitted to: \texttt{innovations.papers@ispa.space}}
+\end{titlepage}
+
+% ============================================================
+% TABLE OF CONTENTS
+% ============================================================
+\clearpage
+\tableofcontents
+\clearpage
+
+% ============================================================
+% ABSTRACT
+% ============================================================
+\section*{Abstract}
+
+Electronic components destined for aerospace payloads undergo \emph{burn-in} screening to
+eliminate early-life failures. Traditional screening compares each parameter against a fixed
+datasheet limit. However, \emph{latent defects} -- components that remain inside absolute
+limits yet exhibit abnormal parametric drift over the burn-in window -- frequently escape into
+final assemblies and fail catastrophically in the field.
+
+\textbf{MAVERICK} is a predictive machine-learning system that analyses time-series parametric
+data recorded at burn-in checkpoints ($0h$, $24h$, $96h$, $168h$) to detect such latent defects
+before they are screened into an operational payload. It combines two cooperating modules:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Module A -- Dynamic Outlier Detection:} a multi-method statistical consensus
+        (Z-Score, IQR bounds, absolute limits) that flags components against their own \emph{lot}
+        distribution rather than a fixed threshold, with explainable reasons for every verdict.
+  \item \textbf{Module B -- Time-Series Drift Predictor:} regression models (Ridge, Random
+        Forest, Gradient Boosting) that forecast the \texttt{Value\_168h} condition from early
+        measurements and flag components whose predicted drift exceeds a safety slope.
+\end{itemize}
+
+The working system is deployed as a fully operational web application and is available live at
+\url{https://isro-burnin-detection.vercel.app}. On the reference dataset the system achieves
+\textbf{100\% recall of defective units (zero escaped parts)} with an anomaly detection score of
+\textbf{81\%}, and delivers per-parameter drift prediction accuracy with a leakage-current MAE of
+\textbf{0.19\,$\mu$A}.
+
+% ============================================================
+\section{Problem Statement}
+\label{sec:problem}
+
+The Department of Space (DoS) screens semiconductor and electronic components during burn-in to
+determine flight-worthiness. A component passes if its electrical parameters (quiescent current
+\texttt{Iddq}, leakage current, propagation delay, supply current) stay within \emph{static,
+absolute} limits at the end of the burn-in period.
+
+This approach misses a critical failure class. A component may remain within absolute limits at
+every checkpoint while exhibiting a sustained, abnormal \emph{drift} relative to its batch
+peers. Such latent defects are statistically distinguishable but numerically "in-spec", and they
+are responsible for a substantial share of premature field failures in high-reliability systems.
+
+\textbf{Open challenges addressed by MAVERICK:}
+\begin{enumerate}[leftmargin=1.5em]
+  \item Detect components that are in-spec but \emph{statistically anomalous} within their lot.
+  \item Predict, early in the burn-in cycle, whether a component will drift out of a safe envelope
+        by the 168h mark.
+  \item Provide human-readable explanations so a QA inspector can trust, audit, and justify every
+        accept/reject decision.
+\end{enumerate}
+
+% ============================================================
+\section{Proposed Solution}
+\label{sec:solution}
+
+MAVERICK implements a two-module predictive pipeline over burn-in time-series data.
+
+\subsection{Module A: Dynamic Outlier Detection System}
+\label{sec:modA}
+
+Static limits catch obvious failures; MAVERICK additionally compares every component against its
+\emph{lot's} statistical distribution at each checkpoint:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Z-Score detection} -- a component is flagged when its value deviates beyond a
+        sensitivity threshold (default \textbf{1.5\,$\sigma$}, high-sensitivity screening).
+  \item \textbf{IQR-based dynamic bounds} -- a component is flagged outside
+        \textbf{1.5\,$\times$\,IQR} of the lot distribution.
+  \item \textbf{Absolute datasheet limits} -- hard pass/fail per parameter.
+  \item \textbf{Majority-vote consensus} -- a component is classified \textbf{REJECT} when at
+        least two of the three methods flag it, giving robustness against single-method noise.
+\end{itemize}
+
+\begin{infobox}
+  \textbf{Illustration:} the lot-average leakage is 10\,$\mu$A, and the absolute limit is
+  50\,$\mu$A. A part reading 45\,$\mu$A passes the absolute check, but -- being more than
+  $1.5\sigma$ and beyond IQR from the lot -- MAVERICK flags it as anomalous for review/reject
+  with an explanation.
+\end{infobox}
+
+\textbf{Anomaly Detection Score.} The system is scored against ground-truth labels using a
+confusion-matrix metric that penalises missed defects (false negatives) at \textbf{10\,$\times$}.
+On the reference dataset this yields \textbf{zero escaped parts} and a detection score of
+\textbf{81\%}.
+
+\subsection{Module B: Time-Series Drift Predictor}
+\label{sec:modB}
+
+A predictive regression module that takes early-window measurements
+(\texttt{Value\_0h}, \texttt{Value\_24h}) as inputs and forecasts the 168h condition:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Three candidate regressors: \textbf{Ridge}, \textbf{Random Forest}, and
+        \textbf{Gradient Boosting}.
+  \item \emph{Automatic model selection} by cross-validated scoring (low MAE / high $R^2$).
+  \item A \emph{safety slope} threshold computed from the historical drift distribution of the lot.
+  \item \emph{Early-rejection flagging} when the predicted drift exceeds the safety slope --
+        enabling intervention before the 168h checkpoint.
+\end{itemize}
+
+\subsection{Explainability}
+\label{sec:explain}
+
+Every accept / review / reject verdict is accompanied by step-by-step reasoning: the raw values,
+the lot statistics involved ($\mu$, $\sigma$, IQR), which methods voted, and the magnitude of
+drift predicted. This makes the decision pipeline \textbf{auditable} by QA inspectors and
+spacecraft quality teams.
+
+% ============================================================
+\section{Key Results}
+\label{sec:results}
+
+\begin{table}[h]
+  \centering
+  \caption{Validation results on the reference burn-in dataset}
+  \vspace{0.3cm}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Metric} & \textbf{Value} & \textbf{Significance} \\
+    \midrule
+    Defect recall (Module A)        & 100\%   & \mbox{Zero escaped defective parts} \\
+    Anomaly Detection Score         & 81\%    & False negatives penalised $10\times$ \\
+    Leakage drift prediction MAE    & 0.19\,$\mu$A & Early warning fidelity \\
+    Iddq drift prediction MAE       & 0.35\,$\mu$A & \\
+    Models considered per parameter & 3       & Ridge / RF / Gradient Boosting \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ============================================================
+\section{Technical Implementation}
+\label{sec:tech}
+
+\subsection{Architecture}
+The system is built as a full-stack web application with a server-side ML core and a mission
+control style operations dashboard:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Frontend:} Next.js 14 (App Router) + Tailwind CSS -- landing page,
+        authentication, data-ingestion module, analysis centre, and a real-time dashboard.
+  \item \textbf{Backend:} Python FastAPI service exposing REST endpoints; scikit-learn based
+        models for both detection and drift prediction.
+  \item \textbf{Authentication:} role-based demo accounts (Administrator / QA Inspector /
+        Engineer).
+\end{itemize}
+
+\subsection{Data Model}
+Burn-in measurement files (CSV/Excel) contain per-component, per-parameter snapshots:
+
+\[
+\texttt{parameter\_0h},\ \texttt{parameter\_24h},\ \texttt{parameter\_96h},\ \texttt{parameter\_168h}
+\]
+
+for parameters such as \texttt{iddq}, \texttt{leakage}, \texttt{delay}, and
+\texttt{supply\_current}, keyed by \texttt{component\_id} and \texttt{lot\_id}.
+
+\subsection{Deployment}
+The application is containerised and deployed to the web; the live, fully functional instance is
+available at:
+
+\begin{center}
+\url{https://isro-burnin-detection.vercel.app}
+\end{center}
+
+% ============================================================
+\section{Impacts and Novelty}
+\label{sec:impact}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Latent-defect capture:} statically in-spec but drifting components are identified,
+        directly addressing a known blind-spot of pass/fail screening.
+  \item \textbf{Early prediction:} drift models flag at-risk components well before the 168h
+        checkpoint, saving burn-in time and cost.
+  \item \textbf{Explainable decisions:} every verdict is reproducible and auditable, which is
+        essential for aerospace-grade quality documentation.
+  \item \textbf{Direct operational value:} the tool targets ISRO / DoS screening workflows and is
+        extensible to any high-reliability electronics qualification line.
+\end{enumerate}
+
+% ============================================================
+\section{Future Work}
+\label{sec:future}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Integration with real wafer/burn-in test-floor data feeds (TDS/STDF semantics).
+  \item Transfer learning across component families to reduce per-lot retraining.
+  \item Uncertainty quantification for drift forecasts driven by burn-in temperature/profiles.
+  \item An edge/embedded deployment for on-test-floor screening stations.
+\end{itemize}
+
+% ============================================================
+\section{How to Access the Project}
+\label{sec:access}
+
+The complete working prototype, including role-based login, sample-data generation, CSV upload,
+Module A and Module B analysis, batch training, and per-component explainability, may be explored
+live:
+
+\begin{center}
+\Large\url{https://isro-burnin-detection.vercel.app}
+\end{center}
+
+\vspace{0.4cm}
+\textbf{Demo credentials:}
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Role} & \textbf{Email} \\
+  \midrule
+  Administrator & \texttt{admin@isro.gov.in}   \\
+  QA Inspector  & \texttt{qa@isro.gov.in}      \\
+  Engineer      & \texttt{engineer@isro.gov.in} \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+MAVERICK demonstrates a practical, explainable, and immediately usable ML system for detecting
+latent burn-in defects that escape conventional pass/fail screening. By combining lot-relative
+statistical detection with time-series drift prediction, it delivers measurable quality gains --
+zero escaped defects on reference data -- and provides aerospace QA teams with the transparency
+required to act on machine judgement with confidence.
+
+We are honoured to submit this project to the ISpA \textbf{Call for Student Innovations}, and we
+would welcome the opportunity to showcase the physical model and live system at the
+\textbf{India International Space Conclave (IISC) 2026}.
+
+\vspace{1cm}
+\begin{flushright}
+\textbf{Manjunath Bhaskar Hebbar}\\
+Manjunath2006548 (GitHub) \\
+\href{mailto:hebbarmanjunath13@gmail.com}{hebbarmanjunath13@gmail.com}
+\end{flushright}
+
+% ============================================================
+% APPENDIX: USER GUIDE
+% ============================================================
+\clearpage
+\appendix
+\section{User Guide --- Operating MAVERICK}
+\label{app:userguide}
+
+This appendix is a condensed user guide for QA inspectors, electronic test engineers and
+evaluators who are using the system for the first time.
+
+% ------------------------------------------------------------
+\subsection{About the System}
+\textbf{MAVERICK} is a web application that helps find defective electronic components (ICs /
+chips / circuit parts) that pass the usual ``static limit'' screening but still show hidden
+abnormal behaviour during burn-in testing. Burn-in means running the component at a high
+temperature (for example $125^{\circ}$C) for a long time, and measuring its electrical
+parameters at different hours --- \textbf{0h, 24h, 96h and 168h}.
+
+The system has two AI tools (called Modules):
+\begin{itemize}
+  \item \textbf{Module A -- Dynamic Outlier Detection}: Compares each component against its own
+        manufacturing \textit{lot}. Even if a part is inside the datasheet limit (for example
+        below $50\,\mu$A), it is flagged if it drifts far away from the average of its lot
+        (e.g.\ lot average is $10\,\mu$A but this part shows $45\,\mu$A).
+  \item \textbf{Module B -- Time-Series Drift Predictor}: Takes the 0h and 24h readings,
+        forecasts the 168h value, and checks whether the predicted drift is faster than a safe
+        limit. If it is, the component is flagged for early rejection.
+\end{itemize}
+
+\greenbox{Why this matters}{A defective part that escapes screening can fail catastrophically
+inside a satellite or rocket payload. This system reduces those escapes by catching ``latent
+defects'' early and by explaining every decision to the QA inspector.}
+
+% ------------------------------------------------------------
+\subsection{How to Start the Application}
+\subsubsection{Starting the server (on the deployment PC)}
+\begin{enumerate}
+  \item Open the project folder on your computer.
+  \item Double-click \code{start.bat}. Two windows open automatically:
+        \begin{itemize}
+          \item The \textbf{Backend server} window (FastAPI --- processes the data).
+          \item The \textbf{Frontend server} window (Next.js --- the webpage you see).
+        \end{itemize}
+  \item Wait for the message \code{Ready} in the frontend window.
+\end{enumerate}
+
+\subsubsection{Opening the webpage}
+\begin{enumerate}
+  \item Open any browser (Chrome / Edge / Firefox).
+  \item Go to: \code{http://localhost:3000} --- or, on a shared deployment, use the deployed
+        web link \url{https://isro-burnin-detection.vercel.app}.
+\end{enumerate}
+
+% ------------------------------------------------------------
+\subsection{How to Log In}
+On the first screen you will see the login page with a \textbf{secure gateway} design.
+\begin{enumerate}
+  \item Enter your \textbf{Email} and \textbf{Password} in the fields.
+  \item Click the \textbf{Login} button.
+  \item If a field is empty or the password is wrong, a red message appears. Check and try again.
+\end{enumerate}
+
+\whatbox{Demo accounts (use any one of these)}{
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Role} & \textbf{Email} & \textbf{Access}\\
+\midrule
+Admin & \code{admin@isro.gov.in}    & Everything\\
+QA Inspector & \code{qa@isro.gov.in} & Everything\\
+Engineer & \code{engineer@isro.gov.in} & Everything\\
+\bottomrule
+\end{tabular}
+\end{center}
+\small Passwords are strong on purpose. New registrations must also use a strong password (at
+least 8 characters, an upper-case letter, a lower-case letter, a number and a special symbol).}
+
+After login you land on the \textbf{Dashboard (Mission Control)} page. On the left there is a
+sidebar menu with the pages: \textbf{Dashboard, Upload Data, Analysis Center} and your
+\textbf{account info}.
+
+% ------------------------------------------------------------
+\subsection{Step-by-Step: How to Test the System}
+Follow these steps in order. The whole test takes about 2--3 minutes.
+
+\vspace{4pt}
+\textbf{Step 1 --- Load data:} go to \textbf{Upload Data} in the left menu.
+\grybox{You have two simple ways:}{
+\begin{itemize}
+  \item \textbf{Option 1 (easiest) -- Sample Data tab:} click the \textbf{Generate \& Load
+        Sample Data} button. This creates 200 realistic burn-in components across 5 lots with
+        about 8\% known defects.
+  \item \textbf{Option 2 -- CSV / Excel Upload tab:} click inside the dashed box, choose your
+        own \code{.csv} or \code{.xlsx} file. The file should have at least:
+        \code{component\_id}, \code{lot\_id}, \code{[parameter]\_0h},
+        \code{[parameter]\_24h}, \code{[parameter]\_96h}, \code{[parameter]\_168h}. The
+        standard parameters are \code{iddq}, \code{leakage}, \code{delay} and
+        \code{supply\_current}.
+\end{itemize}
+\small After loading you see a data preview (columns and first rows) and a confirmation message
+with the record count.}
+
+\vspace{4pt}
+\textbf{Step 2 --- Run the analysis:} go to \textbf{Analysis Center} in the left menu. You will
+see green text \textit{``Dataset loaded: X components across Y lots -- ready to analyze''}. If
+data is missing, an orange warning appears and runs are blocked until you load data. On the left
+there are four method tabs. Click \textbf{Comprehensive} first (it runs everything in one click):
+\begin{enumerate}
+  \item Keep the default \textbf{Z-Score Threshold = 1.5} and \textbf{IQR Multiplier = 1.5}
+        (recommended).
+  \item Click the \textbf{Run Comprehensive Analysis} button.
+  \item Wait a few seconds. The results appear below, including Module A verdicts, an
+        \textbf{Anomaly Detection Score} and (after it finishes training) Module B drift
+        predictions.
+\end{enumerate}
+
+\orbox{Alternative (optional) -- run the two modules separately}{In the same Analysis Center you
+can also use \textbf{Module A: Outlier} (lot-based outlier detection), \textbf{Module B: Drift}
+(Train Models + Run Batch Prediction), and \textbf{Single Prediction} (type a component's 0h
+and 24h values manually to predict its 168h value at once).}
+
+\vspace{4pt}
+\textbf{Step 3 --- Look at the results and certificates:} the results already appear on screen.
+\begin{enumerate}
+  \item \textbf{Stat cards:} PASS / REVIEW / REJECT counts. Clicking a card \textit{opens a
+        certificate} underneath with the exact components.
+  \item \textbf{Detailed report:} in the results table, click \textbf{View Report} (or click a
+        PASS/REVIEW/REJECT badge). A report panel slides in from the right showing raw test
+        values at 0h/24h/96h/168h, per-parameter outlier checks, why-the-verdict reasons, and
+        drift predictions to 168h.
+  \item \textbf{Certificate download:} inside the certificate, click
+        \textbf{Download Certificate} to save an official-looking certificate file. Open it in a
+        browser and print / save as PDF for a PDF copy.
+\end{enumerate}
+
+\vspace{4pt}
+\textbf{Step 4 --- Check the Dashboard:} go to \textbf{Dashboard} in the left menu. The
+mission-control screen summarises everything: total components, lots analyzed, anomalies found,
+drift models trained, the Module A PASS/REVIEW/REJECT split, the Anomaly Detection Score, and
+per-parameter drift accuracy (MAE / RMSE / $R^2$) so you can judge how trustworthy the
+predictions are.
+
+% ------------------------------------------------------------
+\subsection{What Output You Will Get}
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}lXX@{}}
+\toprule
+\textbf{Feature} & \textbf{Where to see it} & \textbf{What it shows}\\
+\midrule
+Data preview \& confirmation & Upload Data page & File name, record count, column list, first rows of your file\\[2pt]
+Classification summary cards & Analysis Center & Total components and counts of PASS / REVIEW / REJECT\\[2pt]
+Anomaly Detection Score & Analysis Center \& Dashboard & Score in \% with TP / FP / TN / FN and Recall (sensitivity)\\[2pt]
+Component results table & Analysis Center (Comprehensive / Module A) & Each component: lot, classification badge, risk score, anomalies count, ``View Report''\\[2pt]
+Certificate (Acceptance / Rejection / Manual Review) & After clicking a PASS / REVIEW / REJECT card & Certificate title, covered component list, test checklist, QA sign-off, reference number, Download button\\[2pt]
+Detailed component report & Click ``View Report'' & Raw 0h/24h/96h/168h values, per-parameter Module A analysis (z-score / IQR / absolute-limit flags), reasons \& recommendations, Module B predicted 168h, safety-slope check\\[2pt]
+Drift accuracy metrics & Module B tab \& Dashboard & Mean Absolute Error (MAE), RMSE, $R^2$, MAPE per parameter, plus PASS/FAIL counts per prediction\\[2pt]
+Single prediction & Single Prediction tab & Predicted 168h value, drift rate, safety slope, exceed flag, recommendation, step-by-step explanation\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% ------------------------------------------------------------
+\subsection{What You Can Observe From the Output}
+\subsubsection{Reading the classification cards}
+\begin{itemize}
+  \item \textbf{PASS (green)} --- component is normal: all parameters are close to its lot
+        average. Safe to use in the payload.
+  \item \textbf{REVIEW (orange)} --- a few parameters deviate moderately. Needs the QA
+        inspector's manual check before a final decision.
+  \item \textbf{REJECT (red)} --- clearly abnormal values (outliers) detected. Must \textbf{not}
+        be deployed.
+\end{itemize}
+
+\subsubsection{Reading the Anomaly Detection Score}
+\whatbox{Formula: $\mathrm{Score} = \max\!\left(0,\; \dfrac{TP+TN-10\times FN-1\times FP}{N}\right)$}{
+\begin{itemize}
+  \item \textbf{TP} = defective parts that were correctly flagged. \textbf{TN} = good parts that
+        were correctly passed.
+  \item \textbf{FN} = defective parts that escaped (missed). A missing defective part is
+        \textbf{catastrophic}, so one FN subtracts the value of 10 correct results.
+  \item \textbf{FP} = good parts wrongly flagged; costs only 1 point (safe but wasteful).
+\end{itemize}
+Best scores are near 100\%. On the included sample data the system typically scores around
+\textbf{81\% with a 100\% recall (zero escapes, FN = 0)} --- very desirable in space
+applications.}
+
+\subsubsection{Reading the drift (Module B) table}
+\begin{itemize}
+  \item Each row shows the \textbf{parameter}, its 0h and 24h inputs, the
+        \textbf{Predicted 168h} value, the \textbf{Actual 168h} (when ground truth exists) and
+        the \textbf{Prediction Error}.
+  \item \textbf{Verdict PASS} means the predicted drift stays within the safety slope;
+        \textbf{FAIL/REJECT} means the component drifts too fast for 168h --- it should be
+        removed early, before it fails in the field.
+  \item A \textbf{low MAE} (for example delay MAE = 0.03) means the model is very accurate;
+        small MAE relative to the measurement unit = trustworthy forecast.
+\end{itemize}
+
+\subsubsection{Reading the detailed report}
+\begin{itemize}
+  \item \textbf{Burn-in dataset values} --- the actual measured values across 0h / 24h / 96h /
+        168h.
+  \item \textbf{Per-parameter checks} --- for every parameter, three methods vote (Z-Score, IQR
+        bounds, Absolute limit). FLAG / CLEAR tells you which method caught the problem.
+  \item \textbf{Why this verdict} --- plain-language reasons, e.g.\ \textit{``Parameter
+        'leakage\_0h' = 7.61 (lot mean 6.79, std 0.26) --- flagged by 2/3 detection methods''},
+        and recommendations such as \textit{``Investigate oxide integrity --- elevated leakage
+        may indicate gate oxide degradation.''}
+  \item \textbf{Module B drift to 168h} --- predicted value, drift rate per hour, safety slope,
+        and whether the component exceeds the safe drift.
+\end{itemize}
+
+\greenbox{Quick sanity checks to confirm results are sensible}{
+\begin{enumerate}
+  \item PASS + REVIEW + REJECT should equal the total components you uploaded.
+  \item When you click a card, the certificate count should match the card number exactly.
+  \item On sample data, roughly 8\% of parts are marked (REJECT + REVIEW) and the rest are
+        PASS --- matching the seeded defect rate.
+  \item FN should be 0 on the sample set (no defective part escapes).
+  \item Most MAE values should be small relative to the parameter's unit.
+\end{enumerate}}
+
+% ------------------------------------------------------------
+\subsection{Common Problems \& Solutions}
+\begin{center}
+\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Problem / Message} & \textbf{Solution}\\
+\midrule
+``No data loaded. Upload a CSV/Excel dataset\ldots'' (orange banner, buttons disabled) & Go to \textbf{Upload Data}, load the sample data or upload a file, then return to Analysis Center.\\[2pt]
+``Error: No parametric columns with time-series data found'' & The file must contain \code{[parameter]\_0h} and \code{[parameter]\_168h} columns (example: \code{iddq\_0h}, \code{iddq\_168h}).\\[2pt]
+Login fails & Double-check the demo email/password from the demo accounts box, or register a new account with a strong password.\\[2pt]
+Certificate looks wrong or download blocked & Download the certificate HTML, open it in a browser and use the browser's \textbf{Print $>$ Save as PDF}.\\[2pt]
+Analysis empty / old results shown & Run \textbf{Run Comprehensive Analysis} again after loading data; results refresh each time.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\orbox{Final tip -- the 60-second demo}{
+\begin{enumerate}
+  \item Log in with any demo account.
+  \item Upload Data tab: click \textbf{Generate \& Load Sample Data}.
+  \item Analysis Center tab: click \textbf{Run Comprehensive Analysis}.
+  \item Click the \textbf{REJECT} card to open a Rejection Certificate, then
+        \textbf{View Report} on any row to see the full explanation.
+  \item Open \textbf{Dashboard} to see the score and drift accuracy.
+\end{enumerate}}
+
+\end{document}

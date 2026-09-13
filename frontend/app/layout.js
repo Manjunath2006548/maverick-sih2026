@@ -1,8 +1,8 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'ISRO Burn-In Anomaly Detection System',
-  description: 'AI-Driven Anomaly Detection in Component Burn-In & Screening - SIH 2026',
+  title: 'PRISMA | ISRO Burn-In Anomaly Detection System',
+  description: 'PRISMA - AI-Driven Anomaly Detection in Component Burn-In & Screening - SIH 2026',
 };
 
 export default function RootLayout({ children }) {

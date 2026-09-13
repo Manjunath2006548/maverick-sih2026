@@ -23,3 +23,5 @@ Thumbs.db
 backend/sample_burn_in_data.csv
 *.pkl
 *.h5
+# Dev server logs
+frontend/dev-8000.log

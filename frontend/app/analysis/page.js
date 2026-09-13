@@ -14,6 +14,7 @@ export default function AnalysisPage() {
   const [driftResults, setDriftResults] = useState(null);
   const [driftPredict, setDriftPredict] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingLabel, setLoadingLabel] = useState('');
   const [message, setMessage] = useState('');
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [explainability, setExplainability] = useState(null);
@@ -69,10 +70,16 @@ export default function AnalysisPage() {
     return true;
   };
 
+  const beginLoading = async (label) => {
+    setLoading(true);
+    setLoadingLabel(label);
+    setMessage('');
+    await new Promise((res) => setTimeout(res, 30));
+  };
+
   const runOutlierAnalysis = async () => {
     if (!assertData()) return;
-    setLoading(true);
-    setMessage('');
+    await beginLoading('Running Module A outlier detection on all components...');
     setCertClass(null);
     try {
       const token = localStorage.getItem('token');
@@ -97,8 +104,7 @@ export default function AnalysisPage() {
   };
 
   const runDriftTraining = async () => {
-    setLoading(true);
-    setMessage('');
+    await beginLoading('Training Module B drift models (Ridge / Random Forest / Gradient Boosting)...');
     try {
       const token = localStorage.getItem('token');
       const res = await fetch('/api/analysis/drift-train', {
@@ -117,8 +123,7 @@ export default function AnalysisPage() {
   };
 
   const runDriftBatch = async () => {
-    setLoading(true);
-    setMessage('');
+    await beginLoading('Running Module B batch drift prediction across the dataset...');
     setCertClass(null);
     try {
       const token = localStorage.getItem('token');
@@ -139,8 +144,7 @@ export default function AnalysisPage() {
   };
 
   const runComprehensive = async () => {
-    setLoading(true);
-    setMessage('');
+    await beginLoading('Comprehensive pipeline running — Module A outlier detection + Module B drift prediction...');
     setCertClass(null);
     try {
       const token = localStorage.getItem('token');
@@ -178,7 +182,7 @@ export default function AnalysisPage() {
       return;
     }
 
-    setLoading(true);
+    await beginLoading('Predicting 168h value with the trained drift model...');
     try {
       const token = localStorage.getItem('token');
       const res = await fetch('/api/analysis/drift-predict', {
@@ -235,6 +239,25 @@ export default function AnalysisPage() {
       <Sidebar user={user} active="analysis" />
 
       <main className="relative z-10 flex-1 ml-64 p-8">
+        {loading && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-isro-darker/70 backdrop-blur-sm">
+            <div className="glass-card rounded-2xl p-8 max-w-sm w-full text-center">
+              <div className="w-14 h-14 mx-auto mb-5">
+                <svg className="animate-spin text-isro-lightblue" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-90" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              </div>
+              <p className="text-white font-semibold text-sm">Processing...</p>
+              <p className="text-gray-400 text-xs mt-2">{loadingLabel || 'Running analysis'}</p>
+              <div className="mt-5 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full w-1/3 bg-gradient-to-r from-isro-blue to-isro-orange rounded-full animate-pulse" />
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Analysis Center</h1>
@@ -954,7 +977,7 @@ function downloadCertificate({ cls, rows = [] }) {
 <body style="margin:0;padding:24px;background:#e2e8f0;font-family:Arial,Helvetica,sans-serif;">
   <div style="max-width:800px;margin:0 auto;background:#ffffff;border:3px double ${accent};border-radius:12px;padding:32px;">
     <div style="text-align:center;border-bottom:2px solid ${accent};padding-bottom:16px;margin-bottom:20px;">
-      <p style="font-size:10px;letter-spacing:2px;color:#64748b;margin:0 0 4px;">MAVERICK BURN-IN SCREENING</p>
+      <p style="font-size:10px;letter-spacing:2px;color:#64748b;margin:0 0 4px;">PRISMA BURN-IN SCREENING</p>
       <h1 style="font-size:24px;color:${accent};margin:0;letter-spacing:1px;">${title}</h1>
       <p style="font-size:11px;color:#64748b;margin:6px 0 0;">AI-Driven Anomaly Detection in Component Burn-In &amp; Screening | Department of Space | ISRO</p>
     </div>
@@ -975,7 +998,7 @@ function downloadCertificate({ cls, rows = [] }) {
 
     <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;">
       <div>
-        <p style="font-size:11px;color:#64748b;margin:0;">Issued By: MAVERICK AI Screening System</p>
+        <p style="font-size:11px;color:#64748b;margin:0;">Issued By: PRISMA AI Screening System</p>
         <p style="font-size:11px;color:#64748b;margin:2px 0 0;">Department of Space | ISRO</p>
         <p style="font-size:10px;color:#94a3b8;margin:6px 0 0;font-family:monospace;">Ref: ${ref}</p>
       </div>
@@ -988,7 +1011,7 @@ function downloadCertificate({ cls, rows = [] }) {
       </div>
     </div>
 
-    <p style="text-align:center;font-size:9px;color:#94a3b8;margin-top:24px;">This is a system-generated certificate from the MAVERICK AI Screening Platform. Disposition verified against Module A (outlier detection) and Module B (drift prediction) analyses.</p>
+    <p style="text-align:center;font-size:9px;color:#94a3b8;margin-top:24px;">This is a system-generated certificate from the PRISMA AI Screening Platform. Disposition verified against Module A (outlier detection) and Module B (drift prediction) analyses.</p>
   </div>
 </body>
 </html>`;
@@ -997,7 +1020,7 @@ function downloadCertificate({ cls, rows = [] }) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `MAVERICK_${cls}_Certificate_${now.toISOString().slice(0, 10)}.html`;
+  a.download = `PRISMA_${cls}_Certificate_${now.toISOString().slice(0, 10)}.html`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1050,7 +1073,7 @@ function ClassificationDetail({ cls, rows = [], mode = 'outlier', onClose, onVie
               </svg>
             </div>
             <div>
-              <p className="text-[10px] font-mono text-gray-500">MAVERICK BURN-IN SCREENING</p>
+              <p className="text-[10px] font-mono text-gray-500">PRISMA BURN-IN SCREENING</p>
               <h4 className={`text-lg font-black tracking-wide ${isPass ? 'text-green-400' : isFail ? 'text-red-400' : 'text-orange-400'}`}>
                 {title}
               </h4>
@@ -1120,7 +1143,7 @@ function ClassificationDetail({ cls, rows = [], mode = 'outlier', onClose, onVie
         {/* Footer */}
         <div className="flex items-end justify-between pt-4 border-t border-white/10">
           <div>
-            <p className="text-[10px] text-gray-500">Issued By: MAVERICK AI Screening System</p>
+            <p className="text-[10px] text-gray-500">Issued By: PRISMA AI Screening System</p>
             <p className="text-[10px] text-gray-500 mt-0.5">Department of Space | ISRO</p>
             <p className="text-[10px] text-gray-600 mt-0.5 font-mono">
               Ref: MAV/{new Date().toISOString().slice(0, 10).replace(/-/g, '')}/{cls}/{rows.length}
@@ -1306,6 +1329,15 @@ function DetailedReport({ data, onClose }) {
                 </tr>
               </thead>
               <tbody>
+                {data.burn_in_temp != null && (
+                  <tr className="border-b border-white/5">
+                    <td className="px-2 py-1.5 font-medium text-white uppercase">Burn-In Temp</td>
+                    <td className="px-2 py-1.5 text-right font-mono text-gray-300">-</td>
+                    <td className="px-2 py-1.5 text-right font-mono text-gray-300">-</td>
+                    <td className="px-2 py-1.5 text-right font-mono text-gray-300">-</td>
+                    <td className="px-2 py-1.5 text-right font-mono text-isro-orange">{num(data.burn_in_temp)}°C</td>
+                  </tr>
+                )}
                 {Object.entries(data.raw_values).map(([param, t]) => (
                   <tr key={param} className="border-b border-white/5">
                     <td className="px-2 py-1.5 font-medium text-white uppercase">{param.replace('_', ' ')}</td>

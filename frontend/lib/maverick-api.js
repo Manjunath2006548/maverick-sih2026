@@ -11,8 +11,8 @@
  * hosted on Netlify with no backend.
  */
 
-const STORE_KEY = 'maverick_state_v1';
-const EXCLUDE_COLS = ['component_id', 'lot_id', 'is_defective', 'test_hour'];
+const STORE_KEY = 'maverick_state_v2';
+const EXCLUDE_COLS = ['component_id', 'lot_id', 'is_defective', 'test_hour', 'burn_in_temp'];
 const PARAM_PREFIXES = ['iddq', 'leakage', 'delay', 'supply_current'];
 const NORM_975 = 1.959963984540054;
 
@@ -105,6 +105,10 @@ function quantile(arr, q) {
 
 function median(arr) {
   return quantile(arr, 0.5);
+}
+
+function yieldThread() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 /* ---------------- MT19937 (numpy-style seeding, seed 42) ---------------- */
@@ -330,7 +334,12 @@ function loadState() {
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
     const base = defaultState();
-    return { ...base, ...parsed, users: { ...base.users, ...(parsed.users || {}) }, tokens: parsed.tokens || {} };
+    const mergedUsers = { ...base.users, ...(parsed.users || {}) };
+    const demoAccounts = ['admin@isro.gov.in', 'qa@isro.gov.in', 'engineer@isro.gov.in'];
+    demoAccounts.forEach((email) => {
+      mergedUsers[email] = base.users[email];
+    });
+    return { ...base, ...parsed, users: mergedUsers, tokens: parsed.tokens || {} };
   } catch (e) {
     return defaultState();
   }
@@ -377,6 +386,7 @@ function generateFlatData(nComponents = 200, nLots = 5, defectRate = 0.08, seed 
         component_id: compId,
         lot_id: lotId,
         is_defective: isDefective,
+        burn_in_temp: 124 + lotIdx * 0.5,
       };
       for (const hours of [0, 24, 96, 168]) {
         let timeDrift = lotDriftFactor * hours;
@@ -649,20 +659,22 @@ function computeDetectionScore(results, dataset) {
   };
 }
 
-function runOutlierAnalysis(records, columns, config) {
+async function runOutlierAnalysis(records, columns, config) {
   const parametricCols = numericColumns(records, columns).filter((c) => !EXCLUDE_COLS.includes(c));
   if (!parametricCols.length) {
     return { error: 400, detail: 'No parametric columns found' };
   }
   const lotStats = fitLotStatistics(records, parametricCols);
   const results = [];
-  for (const r of records) {
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i];
     const lotId = 'lot_id' in r ? String(r.lot_id) : 'default';
     const componentId = 'component_id' in r ? r.component_id : 'unknown';
     const analysis = analyzeComponent(r, lotId, parametricCols, lotStats, config);
     analysis.component_id = componentId;
     analysis.lot_id = lotId;
     results.push(analysis);
+    if (i % 24 === 23) await yieldThread();
   }
   const classifications = { PASS: 0, REVIEW: 0, REJECT: 0 };
   const riskScores = [];
@@ -947,7 +959,7 @@ function resetDriftModels() {
   driftModels = {};
 }
 
-function trainDriftModels(dataset) {
+async function trainDriftModels(dataset) {
   const records = dataset.records;
   const columns = dataset.columns;
   resetDriftModels();
@@ -957,6 +969,7 @@ function trainDriftModels(dataset) {
   const featureImportances = {};
 
   for (const prefix of PARAM_PREFIXES) {
+    await yieldThread();
     const col0 = `${prefix}_0h`;
     const col24 = `${prefix}_24h`;
     const col168 = `${prefix}_168h`;
@@ -1031,6 +1044,7 @@ function trainDriftModels(dataset) {
         bestScore = avg;
         bestName = name;
       }
+      await yieldThread();
     }
 
     const bestModel = models[bestName].factory(Xscaled, y);
@@ -1191,10 +1205,11 @@ function generateDriftExplanation(param, features, predicted168, driftRate, safe
   };
 }
 
-function predictDriftBatch(dataset) {
+async function predictDriftBatch(dataset) {
   const allResults = [];
   const accuracyMetrics = {};
   for (const param of driftModels ? Object.keys(driftModels) : []) {
+    await yieldThread();
     const col0 = `${param}_0h`;
     const col24 = `${param}_24h`;
     const col96 = `${param}_96h`;
@@ -1202,10 +1217,11 @@ function predictDriftBatch(dataset) {
     const has168 = dataset.columns.includes(col168);
     const has96 = dataset.columns.includes(col96);
     const results = [];
-    dataset.records.forEach((row, idx) => {
+    for (let idx = 0; idx < dataset.records.length; idx++) {
+      const row = dataset.records[idx];
       const v0 = row[col0];
       const v24 = row[col24];
-      if (v0 === undefined || v24 === undefined || v0 === null || v24 === null || isNaN(v0) || isNaN(v24)) return;
+      if (v0 === undefined || v24 === undefined || v0 === null || v24 === null || isNaN(v0) || isNaN(v24)) continue;
       let v96 = has96 ? row[col96] : null;
       if (v96 === undefined || v96 === null || isNaN(v96)) v96 = null;
       const prediction = predictSingleDrift(param, v0, v24, v96);
@@ -1218,7 +1234,8 @@ function predictDriftBatch(dataset) {
       prediction.component_id = row.component_id;
       if (row.lot_id !== undefined) prediction.lot_id = row.lot_id;
       results.push(prediction);
-    });
+      if (idx % 24 === 23) await yieldThread();
+    }
     allResults.push(...results);
     if (has168) accuracyMetrics[param] = getOverallAccuracy(results);
   }
@@ -1252,20 +1269,23 @@ function getOverallAccuracy(results) {
 
 /* ---------------- comprehensive / explain / dashboard ---------------- */
 
-function runComprehensive(records, columns, config) {
+async function runComprehensive(records, columns, config) {
   const parametricCols = numericColumns(records, columns).filter((c) => !EXCLUDE_COLS.includes(c));
   if (!parametricCols.length) {
     return { error: 400, detail: 'No parametric columns found' };
   }
   const lotStats = fitLotStatistics(records, parametricCols);
-  const outlierResults = records.map((r) => {
+  const outlierResults = [];
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i];
     const lotId = 'lot_id' in r ? String(r.lot_id) : 'default';
     const componentId = 'component_id' in r ? r.component_id : 'unknown';
     const a = analyzeComponent(r, lotId, parametricCols, lotStats, config);
     a.component_id = componentId;
     a.lot_id = lotId;
-    return a;
-  });
+    outlierResults.push(a);
+    if (i % 24 === 23) await yieldThread();
+  }
   const outlierClassifications = { PASS: 0, REVIEW: 0, REJECT: 0 };
   const riskScores = [];
   for (const r of outlierResults) {
@@ -1296,7 +1316,7 @@ function runComprehensive(records, columns, config) {
     combined_verdict: r.classification,
   }));
 
-  const driftPart = runDriftPipeline(records, columns);
+  const driftPart = await runDriftPipeline(records, columns);
   if (driftPart) {
     summary.module_b.drift_distribution = driftPart.distribution;
     summary.module_b.accuracy = driftPart.accuracy;
@@ -1317,13 +1337,13 @@ function runComprehensive(records, columns, config) {
   };
 }
 
-function runDriftPipeline(records, columns) {
+async function runDriftPipeline(records, columns) {
   const hasDrift = PARAM_PREFIXES.some((p) => columns.includes(`${p}_0h`) && columns.includes(`${p}_168h`));
   if (!hasDrift) return null;
-  const params = trainDriftModels({ records, columns });
+  const params = await trainDriftModels({ records, columns });
   if (!params.length) return null;
   const dummyDataset = { records, columns };
-  const { allResults, accuracyMetrics } = predictDriftBatch(dummyDataset);
+  const { allResults, accuracyMetrics } = await predictDriftBatch(dummyDataset);
   state.drift_results = allResults;
   state.drift_accuracy = accuracyMetrics;
   persist();
@@ -1355,6 +1375,7 @@ function buildExplanation(componentId) {
     is_defective: 'is_defective' in match
       ? (match.is_defective === true || match.is_defective === 'True' || match.is_defective === 1)
       : null,
+    burn_in_temp: 'burn_in_temp' in match ? match.burn_in_temp : null,
     raw_values: rawValues,
   };
   if (state.outlier_results) {
@@ -1597,7 +1618,7 @@ export async function handleApiRequest(url, init = {}) {
     const cfg = { ...state.detectorConfig, ...(await bodyJson()) };
     state.detectorConfig = cfg;
     persist();
-    const result = runOutlierAnalysis(state.dataset.records, state.dataset.columns, cfg);
+    const result = await runOutlierAnalysis(state.dataset.records, state.dataset.columns, cfg);
     if (result.error) return respond(result.error, { detail: result.detail });
     state.outlier_results = result.results;
     state.outlier_summary = result.summary;
@@ -1609,11 +1630,11 @@ export async function handleApiRequest(url, init = {}) {
     const err = await requireAuth();
     if (err) return err;
     if (!state.dataset) return respond(400, { detail: 'No data loaded' });
-    const trained = trainDriftModels(state.dataset);
+    const trained = await trainDriftModels(state.dataset);
     if (!trained.length) {
       return respond(400, { detail: 'No parametric columns with time-series data found' });
     }
-    const { allResults, accuracyMetrics } = predictDriftBatch(state.dataset);
+    const { allResults, accuracyMetrics } = await predictDriftBatch(state.dataset);
     state.drift_results = allResults;
     state.drift_accuracy = accuracyMetrics;
     persist();
@@ -1640,9 +1661,9 @@ export async function handleApiRequest(url, init = {}) {
     if (err) return err;
     if (!state.dataset) return respond(400, { detail: 'No data loaded' });
     if (!Object.keys(driftModels).length && state.trained_parameters.length) {
-      trainDriftModels(state.dataset);
+      await trainDriftModels(state.dataset);
     }
-    const { allResults, accuracyMetrics } = predictDriftBatch(state.dataset);
+    const { allResults, accuracyMetrics } = await predictDriftBatch(state.dataset);
     state.drift_results = allResults;
     state.drift_accuracy = accuracyMetrics;
     persist();
@@ -1675,7 +1696,7 @@ export async function handleApiRequest(url, init = {}) {
     const cfg = { ...state.detectorConfig, ...(await bodyJson()) };
     state.detectorConfig = cfg;
     persist();
-    const result = runComprehensive(state.dataset.records, state.dataset.columns, cfg);
+    const result = await runComprehensive(state.dataset.records, state.dataset.columns, cfg);
     if (result.error) return respond(result.error, { detail: result.detail });
     persist();
     return respond(200, {
@@ -1688,7 +1709,7 @@ export async function handleApiRequest(url, init = {}) {
   if (method === 'GET' && route === '/system/health') {
     return respond(200, {
       status: 'healthy',
-      system: 'ISRO Burn-In Anomaly Detection System',
+      system: 'PRISMA - ISRO Burn-In Anomaly Detection System',
       version: '1.0.0',
       data_loaded: !!state.dataset,
       models_trained: Object.keys(driftModels).length > 0,
