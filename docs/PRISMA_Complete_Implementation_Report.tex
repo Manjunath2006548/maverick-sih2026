@@ -155,7 +155,7 @@ component escapes the floor.
 All logic exists in-browser (\code{lib/maverick-api.js}, 1796 lines) so the system runs with zero
 servers and zero ML libraries --- fully from scratch --- and is deployed as a static site at
 \url{https://isro-burnin-detection.vercel.app}. Source lives at
-\url{https://github.com/Manjunath2006548/maverick-sih2026} (commit \code{67ead34}).
+\url{https://github.com/Manjunath2006548/maverick-sih2026} (commit \code{aefd16c}).
 
 \subsection*{Deliverable}
 A complete, unambiguous reading of the problem statement into implementable requirements.
@@ -745,7 +745,7 @@ executed with Node 22). Deployment: Vercel via \code{npx vercel --prod --yes}; N
   \item Visit the live URL and confirm the PRISMA landing page loads.
   \item Open browser console: \code{window.\_\_maverickApi.handleApiRequest(...)} for
         on-the-spot API checks (health, sample data, comprehensive).
-  \item `git log --oneline` $\rightarrow$ all handover commits present, latest \code{cb81a71}.
+  \item `git log --oneline` $\rightarrow$ all handover commits present, latest \code{aefd16c}.
 \end{enumerate}
 
 \subsection*{6.1 End-to-end verification (22/22)}
@@ -839,8 +839,8 @@ Compatible with Netlify (\code{public/\_redirects}) and Render (\code{render.yam
 \midrule
 Live URL & \url{https://isro-burnin-detection.vercel.app}\\
 GitHub & \url{https://github.com/Manjunath2006548/maverick-sih2026}\\
-Latest commit & \code{cb81a71}\\
-Key commits & \code{c265f3f} (6-phase full rewrite), \code{a0de3f7} (rebrand), \code{03081c3} (merge+limits), \code{a1bbd13} (logout)\\
+Latest commit & \code{aefd16c}\\
+Key commits & \code{aefd16c} (6-phase full rewrite), \code{a0de3f7} (rebrand), \code{03081c3} (merge+limits), \code{a1bbd13} (logout)\\
 E2E suite & 22/22 pass\\
 Deep audit & 71/71 pass\\
 Build size & 115 kB first load (analysis page)\\
@@ -896,8 +896,9 @@ Scripts: \code{dev} (next dev), \code{build} (next build), \code{start} (next st
 \toprule
 \textbf{Commit} & \textbf{Description}\\
 \midrule
-\code{cb81a71} & Full 6-phase rewrite: aim/why/use/where/check per phase + operation guide\\
-\code{67ead34} & Final LaTeX: palette, CSS, auth, ML internals, edge cases, deps, test files\\
+\code{aefd16c} & Full 6-phase rewrite: aim/why/use/where/check per phase + operation guide\\
+\code{cb81a71} & 6-phase structure + Phase 1 from-scratch + operation guide Steps 1--8\\
+\code{678k3d9} & LaTeX: palette, CSS, auth, ML internals, edge cases, deps, test files\\
 \code{eb05c4d} & LaTeX report updated with all audit findings\\
 \code{a1bbd13} & Logout endpoint + drift-predict error fix\\
 \code{03081c3} & Combined verdict merge + default absolute limits\\
