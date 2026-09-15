@@ -180,6 +180,56 @@ A complete, unambiguous reading of the problem statement into implementable requ
 % ==================== Phase 2 ====================
 \phasebox{Phase 2}{15\% -- 35\%}{Architecture and Technology Design}
 
+\subsection*{Aim}
+Design a zero-server, fully in-browser architecture with ISRO branding --- every API route,
+every ML model, and every cryptographic primitive implemented from scratch in JavaScript, deployable
+as a static site with no backend, no GPU, and no cloud ML service.
+
+\subsection*{Why we are doing this}
+\begin{itemize}[leftmargin=1.5em]
+  \item A hackathon prototype must run without cloud accounts, GPU quotas, or backend infrastructure.
+        An in-browser system is zero-cost, zero-ops, and instantly auditable in any browser.
+  \item Defence/space organisations prohibit external data upload. Running everything locally in
+        the browser means no parametric data ever leaves the machine.
+  \item A fetch shim intercepting \code{fetch('/api/...')} lets the same API contracts run
+        unchanged --- in-browser during demo, or against a real server in production.
+  \item Static export (\code{next build} $\rightarrow$ \code{out/}) means the entire site is a set
+        of HTML/JS/CSS files: deployable to Vercel, Netlify, Render, or a USB stick.
+\end{itemize}
+
+\subsection*{What this phase delivers}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Fetch shim:} every \code{fetch('/api/...')} call intercepted, routed to
+        \code{handleApiRequest()} in memory. Guard: \code{window.\_\_maverickShimInstalled}
+        prevents double-install.
+  \item \textbf{ML from scratch:} SHA-256 (64 K-constants, 8 H0 values), MT19937 (N=624, M=397,
+        MAGIC=1812433253), Gauss-Jordan elimination (pivot threshold $10^{-12}$), CART trees
+        (MSE reduction), RF (100 trees, bootstrap $n$ with replacement, all features per split),
+        GB (100 trees, lr 0.1, init = mean($y$)).
+  \item \textbf{State persistence:} \code{localStorage} key \code{maverick\_state\_v2} with
+        try/catch guard for quota errors.
+  \item \textbf{Debug API:} \code{window.\_\_maverickApi} exposes \code{handleApiRequest},
+        \code{state}, \code{generateFlatData}, \code{installShim} for console-based verification.
+\end{itemize}
+
+\subsection*{Where we have implemented}
+\code{frontend/lib/maverick-api.js} (1796 lines): the entire in-browser backend.
+\code{frontend/lib/api.js} (107 lines): client wrapper with token management and logout.
+\code{frontend/next.config.js}: static export + Netlify detection.
+\code{frontend/render.yaml}: Render deployment (Python 3.11.9 + static).
+\code{frontend/public/\_redirects}: Netlify/Render API proxy.
+
+\subsection*{How to check}
+\begin{enumerate}[leftmargin=1.5em]
+  \item Open browser console, type \code{window.\_\_maverickApi} --- all four functions exposed.
+  \item Call \code{window.\_\_maverickApi.handleApiRequest('\{'method:'GET',path:'/api/health'\})}
+        $\rightarrow$ returns \{system:``PRISMA'',version:``1.0.0''\}.
+  \item Log in with demo credentials, then call \code{window.\_\_maverickApi.state} to see
+        tokens, user, data, and all cached analysis results.
+  \item Run \code{npm run build} in \code{frontend/} $\rightarrow$ \code{out/} directory contains
+        pure static files (no server needed).
+\end{enumerate}
+
 \subsection*{Stack}
 \begin{center}
 \begin{tabular}{@{}lll@{}}
@@ -269,6 +319,56 @@ Login/role/401/logout: 6/6 checks pass in E2E suite and deep audit.
 
 % ==================== Phase 3 ====================
 \phasebox{Phase 3}{35\% -- 60\%}{Data Ingestion and Module A (Dynamic Outlier Detection)}
+
+\subsection*{Aim}
+Generate a deterministic, reproducible burn-in dataset and implement Module A: dynamic,
+lot-relative outlier detection that catches the 10\,$\mu$A $\rightarrow$ 45\,$\mu$A $\rightarrow$
+50\,$\mu$A defect that static datasheet screening misses.
+
+\subsection*{Why we are doing this}
+\begin{itemize}[leftmargin=1.5em]
+  \item Every result in this report must be \textbf{reproducible by any evaluator}. Seed-42
+        MT19937 guarantees the identical dataset for every run, everywhere.
+  \item Real burn-in data is proprietary (ISRO test-floor records are classified). A
+        physics-informed synthetic generator (base ranges, lot drift, defect multipliers, Gaussian
+        noise, 125\,$^{\circ}$C burn-in temperature) produces realistic data for a live demo.
+  \item Static 50\,$\mu$A limits cannot see lot-relative anomalies. A part at 45\,$\mu$A in a
+        10\,$\mu$A lot is physically fine by datasheet but statistically impossible --- the
+        trajectory is the tell-tale of a latent defect.
+  \item Three independent detection methods (Z-score, IQR, absolute limit) with consensus
+        reduce false alarms while guaranteeing zero escapes.
+\end{itemize}
+
+\subsection*{What this phase delivers}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{CSV upload:} hand-written parser (quoted fields, CRLF/LF, numeric/boolean/null
+        coercion); Excel rejected with clear error.
+  \item \textbf{Manual entry:} \code{key:value} lines queued per component.
+  \item \textbf{Sample data:} 200 components $\times$ 5 lots $\times$ 4 checkpoints = \textbf{20
+        columns}, $\sim$8\% defect rate, 15 seeded defects.
+  \item \textbf{Module A outlier analysis} with per-method verdicts, risk score, and consensus.
+  \item \textbf{Detection score} with FN penalised 10$\times$.
+\end{itemize}
+
+\subsection*{Where we have implemented}
+\code{lib/maverick-api.js}: \code{generateFlatData}, \code{analyzeOutliers},
+\code{detectionScore} (Z-score/IQR/absolute methods), \code{requireAuth},
+\code{handleApiRequest} for \code{/api/upload/csv}, \code{/api/upload/manual},
+\code{/api/data/sample}, \code{/api/data/stats}, \code{/api/module-a/outlier}.
+UI: \code{frontend/app/upload/page.js} and \code{frontend/app/analysis/page.js}.
+
+\subsection*{How to check}
+\begin{enumerate}[leftmargin=1.5em]
+  \item Generate sample data in the Upload page $\rightarrow$ banner reads
+        ``Data loaded (200 components / 5 lots)''.
+  \item Run Module A $\rightarrow$ summary shows \textbf{PASS=164 / REVIEW=33 / REJECT=3};
+        detection score \textbf{79\%}, recall \textbf{100\%}; \textbf{FN=0}; FP=21.
+  \item Set \code{z\_threshold = 99} in console $\rightarrow$ all 200 become PASS.
+  \item Set \code{absolute\_limits = 0.1} $\rightarrow$ REJECT rises to 9 (absolute limit firing).
+  \item Inspect the 45\,$\mu$A component: its lot mean is 10\,$\mu$A, so Z-score and IQR both
+        FLAG it even though 45\,$\mu$A $<$ 50\,$\mu$A datasheet wall --- the live proof of the
+        problem-statement example.
+\end{enumerate}
 
 \subsection*{3.1 Data ingestion}
 \begin{itemize}[leftmargin=1.5em]
@@ -363,6 +463,52 @@ delay, lot-level for others), and \keys{confidence} rationale.
 % ==================== Phase 4 ====================
 \phasebox{Phase 4}{60\% -- 80\%}{Module B and Evaluation Metrics}
 
+\subsection*{Aim}
+Build Module B: a time-series drift predictor that forecasts the 168h parameter value from the
+0h/24h (optionally 96h) trend, and rejects components whose predicted drift exceeds a
+statistically-derived safety slope --- catching failures \emph{before they happen}.
+
+\subsection*{Why we are doing this}
+\begin{itemize}[leftmargin=1.5em]
+  \item Module A sees the component \emph{today}. A component can be within every limit today yet
+        be on a trajectory to fail by 168h. Module B forecasts that trajectory.
+  \item The problem statement demands ``drift accuracy (MAE)'' --- Module B provides per-parameter
+        MAE, RMSE, $R^2$, MAPE on a train/validate split.
+  \item Implementing Ridge / Random Forest / Gradient Boosting \textbf{from scratch} (no scikit-learn)
+        proves the ML fundamentals and guarantees zero external ML dependencies.
+  \item A statistical safety slope (mean 0$\rightarrow$24h drift + 1.96$\cdot$std) is more
+        defensible than a hand-picked constant threshold: it adapts to each parameter and lot.
+\end{itemize}
+
+\subsection*{What this phase delivers}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Feature engineering} (per parameter, per component): value at 0h/24h/(96h), drift,
+        drift rate, percentage change, acceleration; \code{has96} flag adapts vector length.
+  \item \textbf{Three regressors:} Ridge (closed-form L2), RF (100 CART trees), GB (100 shallow
+        trees) --- with StandardScaler and 5-fold sequential CV for model selection.
+  \item \textbf{Safety-slope early rejection} with margin and confidence.
+  \item \textbf{Drift Prediction Accuracy} table (MAE/RMSE/$R^2$) for all four parameters.
+\end{itemize}
+
+\subsection*{Where we have implemented}
+\code{lib/maverick-api.js}: \code{trainDriftModel}, \code{predictDriftBatch},
+\code{predictDrift}, \code{StandardScaler}, \code{safetySlope}, plus the from-scratch
+\code{ridgeRegression}, \code{randomForest}, \code{gradientBoosting}, \code{computeStatistics}.
+UI: Module B tab and Single Prediction tab in \code{frontend/app/analysis/page.js}.
+
+\subsection*{How to check}
+\begin{enumerate}[leftmargin=1.5em]
+  \item Module B (Batch) on sample data $\rightarrow$ 800 predictions: \textbf{771 PASS /
+        29 REJECT}.
+  \item Accuracy cards show the exact deterministic numbers: iddq MAE 0.071789, leakage MAE
+        0.041655, delay MAE 0.000719, supply MAE 0.140619; delay model = GB, others = RF.
+  \item Single Prediction, parameter \code{iddq}, component default $\rightarrow$
+        \code{Value\_168h = 11.4747}, recommendation PASS.
+  \item Edge-case proofs: flat input (0h$=$24h) $\rightarrow$ PASS; input with 24h$=$10$\times$0h
+        $\rightarrow$ REJECT (safety slope exceeded).
+  \item Request an unknown parameter $\rightarrow$ HTTP 400 (not a silent 200-with-error).
+\end{enumerate}
+
 \subsection*{4.1 Feature engineering}
 Per parameter, per component: \code{value\_0h}, \code{value\_24h}, drift
 ($x_{24h}-x_{0h}$), drift rate ($(x_{24h}-x_{0h})/24$), percentage change
@@ -438,6 +584,63 @@ Batch: \textbf{800} predictions $\rightarrow$ \textbf{771 PASS / 29 REJECT}.
 % ==================== Phase 5 ====================
 \phasebox{Phase 5}{80\% -- 90\%}{Comprehensive Pipeline, Frontend, and Explainability}
 
+\subsection*{Aim}
+Merge Module A and Module B into a single comprehensive pipeline with a unified verdict, and wrap
+everything in a complete, accessible, audit-ready ISRO-branded interface --- with certificates,
+6-step reasoning chains, and a mission-control dashboard --- so a QA inspector can go from raw
+data to a signed disposition with a few clicks.
+
+\subsection*{Why we are doing this}
+\begin{itemize}[leftmargin=1.5em]
+  \item Module A alone (outliers today) and Module B alone (drift prediction) each miss half the
+        story. A \textbf{merged verdict} (REJECT $>$ REVIEW $>$ PASS union) is what a screening
+        inspector actually needs.
+  \item An ML system is only useful if a non-technical inspector can operate it. Clean UI,
+        colour-coded verdicts, clickable filters, and certificates close the loop.
+  \item Every automated verdict must be \textbf{explainable} (``why was this component flagged?'')
+        --- ISRO QA needs a 6-step reasoning chain and devices (MIL-STD-883 screening) to
+        trust the system.
+  \item Downloadable HTML certificates give the acceptance/rejection a physical, signable
+        handover artefact --- matching the problem statement's requirement for a certificate of
+        acceptance.
+\end{itemize}
+
+\subsection*{What this phase delivers}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Comprehensive pipeline:} one \code{POST /api/comprehensive} runs outlier analysis
+        + drift training + batch prediction, returns \code{combined\_verdict} per component.
+  \item \textbf{Merged verdict logic:} \code{worst(outlier\_classification, drift\_recommendation)}
+        with priority REJECT $>$ REVIEW $>$ PASS.
+  \item \textbf{Five pages:} landing, login (auth), upload, analysis (comprehensive/Module A/
+        Module B/single prediction), dashboard ($+$ sidebar).
+  \item \textbf{Explainability panel} with 6-step reasoning chain, lot statistics,
+        per-method votes, burn-in temperature.
+  \item \textbf{Certificates:} Accept / Reject / Manual Review as downloadable HTML with full
+        screening checklist and QA sign-off.
+  \item \textbf{UX hardening:} yield every 24 iterations, 30ms paint-gate, loading overlay,
+        ``Upload Data First'' warnings, role-coloured sidebar.
+\end{itemize}
+
+\subsection*{Where we have implemented}
+\code{lib/maverick-api.js}: \code{runComprehensive}; \code{frontend/app/analysis/page.js}
+(1581 lines); \code{frontend/app/upload/page.js}; \code{frontend/app/login/page.js};
+\code{frontend/app/dashboard/page.js}; \code{frontend/app/page.js}; \code{frontend/components/Sidebar.js};
+\code{frontend/app/globals.css}; \code{frontend/tailwind.config.js}.
+
+\subsection*{How to check}
+\begin{enumerate}[leftmargin=1.5em]
+  \item Comprehensive on sample data $\rightarrow$ summary shows combined REJECT = \textbf{11}
+        (Module A 3 + Module B 10, 2 overlapping).
+  \item Detail overlay for any component: Module A votes per parameter (Z/IQR/absolute =
+        FLAG/CLEAR), Module B predicted value vs safety slope with margin, burn-in temperature,
+        and the full 6-step reasoning chain.
+  \item Click the \keys{REJECT} count $\rightarrow$ the table filters to only rejected components.
+  \item Download the rejection certificate $\rightarrow$ verify the 8-item screening checklist
+        and QA sign-off block render correctly.
+  \item Dashboard shows 200 components, 5 lots, anomalies, 4 trained models, and the green
+        pipeline visual. Sidebar colours change with role (admin orange, qa blue, engineer green).
+\end{enumerate}
+
 \subsection*{5.1 Comprehensive pipeline with merged verdict}
 One call runs Module A + Module B: outlier analysis, drift training, batch prediction,
 \code{combined\_verdict}. Merge: \code{worst(outlier\_classification, drift\_recommendation)}
@@ -497,6 +700,53 @@ dashboard, upload).
 
 % ==================== Phase 6 ====================
 \phasebox{Phase 6}{90\% -- 100\%}{Verification, Deployment, and Handover}
+
+\subsection*{Aim}
+Prove every claim in this report with automated tests (22-check E2E suite, 71-check deep audit),
+verify determinism and edge cases, deploy the production build to the live URL, and hand over a
+finished, documented, reproducible system.
+
+\subsection*{Why we are doing this}
+\begin{itemize}[leftmargin=1.5em]
+  \item A hackathon report is only credible if every number can be independently reproduced.
+        Hiding behind ``it works on my machine'' is not acceptable.
+  \item Determinism (seed 42) means an evaluator who clicks ``Sample Data'' sees the exact same
+        numbers as this report --- wrong numbers are immediately caught (FN$=$0, score 79\%,
+        771/29, 11.4747, etc.).
+  \item Edge cases (zero std, empty dataset, singular matrix, localStorage full, unknown
+        parameter) prove the system does not crash on real-world malformed inputs --- which is
+        what actually happens on a test floor.
+  \item Deployment to \url{https://isro-burnin-detection.vercel.app} proves the static-export
+        architecture is production-viable and reachable by any evaluator, anywhere.
+\end{itemize}
+
+\subsection*{What this phase delivers}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{E2E suite} (\code{test-e2e.cjs}, 7.1 kB): 22 checks --- login/register/logout,
+        401 gate, health, sample, stats, Module A, Module B, comprehensive, explain, dashboard.
+  \item \textbf{Deep audit} (\code{deep-audit.cjs}, 27.8 kB): 71 checks --- 31 categorised
+        (auth 6, data 4, Module A 4, Module B 5, comprehensive 3, explain 3, dashboard 3, health 1,
+        determinism 2) + 40 edge cases.
+  \item \textbf{Production build} deployed to Vercel; live bundle verified to contain
+        \code{combined\_verdict}, \code{burn\_in\_temp}, \code{drift\_recommendation}.
+  \item \textbf{Git history} and this complete implementation report for handover.
+\end{itemize}
+
+\subsection*{Where we have implemented}
+Test scripts: \code{test-e2e.cjs} and \code{deep-audit.cjs} (in the project workspace,
+executed with Node 22). Deployment: Vercel via \code{npx vercel --prod --yes}; Netlify via
+\code{public/\_redirects}; Render via \code{render.yaml}.
+
+\subsection*{How to check}
+\begin{enumerate}[leftmargin=1.5em]
+  \item \code{node test-e2e.cjs} $\rightarrow$ \textbf{22/22 pass} (every assertion targets the
+        same in-browser API the live site uses).
+  \item \code{node deep-audit.cjs} $\rightarrow$ \textbf{71/71 pass}.
+  \item Visit the live URL and confirm the PRISMA landing page loads.
+  \item Open browser console: \code{window.\_\_maverickApi.handleApiRequest(...)} for
+        on-the-spot API checks (health, sample data, comprehensive).
+  \item `git log --oneline` $\rightarrow$ all handover commits present, latest \code{cb81a71}.
+\end{enumerate}
 
 \subsection*{6.1 End-to-end verification (22/22)}
 \begin{center}
@@ -589,8 +839,8 @@ Compatible with Netlify (\code{public/\_redirects}) and Render (\code{render.yam
 \midrule
 Live URL & \url{https://isro-burnin-detection.vercel.app}\\
 GitHub & \url{https://github.com/Manjunath2006548/maverick-sih2026}\\
-Latest commit & \code{eb05c4d}\\
-Key commits & \code{a0de3f7} (rebrand), \code{03081c3} (merge+limits), \code{a1bbd13} (logout)\\
+Latest commit & \code{cb81a71}\\
+Key commits & \code{c265f3f} (6-phase full rewrite), \code{a0de3f7} (rebrand), \code{03081c3} (merge+limits), \code{a1bbd13} (logout)\\
 E2E suite & 22/22 pass\\
 Deep audit & 71/71 pass\\
 Build size & 115 kB first load (analysis page)\\
@@ -646,6 +896,8 @@ Scripts: \code{dev} (next dev), \code{build} (next build), \code{start} (next st
 \toprule
 \textbf{Commit} & \textbf{Description}\\
 \midrule
+\code{cb81a71} & Full 6-phase rewrite: aim/why/use/where/check per phase + operation guide\\
+\code{67ead34} & Final LaTeX: palette, CSS, auth, ML internals, edge cases, deps, test files\\
 \code{eb05c4d} & LaTeX report updated with all audit findings\\
 \code{a1bbd13} & Logout endpoint + drift-predict error fix\\
 \code{03081c3} & Combined verdict merge + default absolute limits\\
