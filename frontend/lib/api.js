@@ -49,6 +49,8 @@ export const auth = {
     }),
 
   me: () => apiCall('/auth/me'),
+
+  logout: () => apiCall('/auth/logout', { method: 'POST' }),
 };
 
 export const data = {

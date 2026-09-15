@@ -1552,6 +1552,14 @@ export async function handleApiRequest(url, init = {}) {
     return respond(200, { message: 'Registration successful', email, role });
   }
 
+  if (method === 'POST' && route === '/auth/logout') {
+    if (token && state.tokens[token]) {
+      delete state.tokens[token];
+      persist();
+    }
+    return respond(200, { message: 'Logged out' });
+  }
+
   if (method === 'GET' && route === '/auth/me') {
     const err = await requireAuth();
     if (err) return err;
@@ -1681,7 +1689,9 @@ export async function handleApiRequest(url, init = {}) {
     const err = await requireAuth();
     if (err) return err;
     const { param, value_0h, value_24h, value_96h } = await bodyJson();
-    return respond(200, predictSingleDrift(param, value_0h, value_24h, value_96h));
+    const result = predictSingleDrift(param, value_0h, value_24h, value_96h);
+    if (result.status === 'error') return respond(400, { detail: result.message });
+    return respond(200, result);
   }
 
   if (method === 'POST' && route === '/analysis/drift-batch') {
