@@ -14,6 +14,7 @@ export default function UploadPage() {
   const [manualEntry, setManualEntry] = useState({
     component_id: '', lot_id: '', measurements: {}
   });
+  const [manualText, setManualText] = useState('');
   const [manualEntries, setManualEntries] = useState([]);
   const [activeTab, setActiveTab] = useState('csv');
   const router = useRouter();
@@ -76,9 +77,29 @@ export default function UploadPage() {
       setMessage('Please enter component ID and lot ID');
       return;
     }
-    setManualEntries([...manualEntries, { ...manualEntry }]);
+    const measurements = {};
+    let validCount = 0;
+    manualText.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      let sepIdx = trimmed.indexOf(':');
+      if (sepIdx === -1) sepIdx = trimmed.indexOf('=');
+      if (sepIdx === -1) return;
+      const key = trimmed.slice(0, sepIdx).trim();
+      const value = trimmed.slice(sepIdx + 1).trim();
+      if (key && value) {
+        measurements[key] = parseFloat(value);
+        validCount++;
+      }
+    });
+    if (validCount === 0) {
+      setMessage('Please enter at least one measurement (key: value)');
+      return;
+    }
+    setManualEntries([...manualEntries, { component_id: manualEntry.component_id, lot_id: manualEntry.lot_id, measurements }]);
     setManualEntry({ component_id: '', lot_id: '', measurements: {} });
-    setMessage(`Added component ${manualEntry.component_id}. Total entries: ${manualEntries.length + 1}`);
+    setManualText('');
+    setMessage(`Added component ${manualEntry.component_id} with ${validCount} measurements. Total entries: ${manualEntries.length + 1}`);
   };
 
   const submitManualEntries = async () => {
@@ -231,19 +252,12 @@ export default function UploadPage() {
                 </div>
               </div>
 
-              <p className="text-xs text-gray-500 mb-3">Parametric Measurements (key=value pairs)</p>
+              <p className="text-xs text-gray-500 mb-3">Parametric Measurements (one key : value pair per line)</p>
               <textarea
-                value={Object.entries(manualEntry.measurements).map(([k, v]) => `${k}: ${v}`).join('\n')}
-                onChange={(e) => {
-                  const measurements = {};
-                  e.target.value.split('\n').forEach(line => {
-                    const [key, value] = line.split(':').map(s => s.trim());
-                    if (key && value) measurements[key] = parseFloat(value);
-                  });
-                  setManualEntry({ ...manualEntry, measurements });
-                }}
+                value={manualText}
+                onChange={(e) => setManualText(e.target.value)}
                 className="w-full px-4 py-3 bg-isro-dark border border-white/10 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-isro-lightblue/50 h-32"
-                placeholder={`iddq_0h: 10.5\niddq_24h: 10.8\nleakage_0h: 4.2\nleakage_24h: 4.5\ndelay_0h: 2.3\ndelay_24h: 2.35`}
+                placeholder={`iddq_0h: 10.5\niddq_24h: 10.8\nleakage_0h = 4.2\nleakage_24h = 4.5\ndelay_0h: 2.3\ndelay_24h: 2.35`}
               />
 
               <div className="flex gap-3 mt-4">
