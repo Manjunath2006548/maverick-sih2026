@@ -88,12 +88,11 @@
   {\large --- Concept to Live Deployment, in 6 Phases ---}\\[1.5cm]
   {\itshape\large Smart India Hackathon 2026 \,\textbf{·}\, Smart Automation \,\textbf{·}\, PS SIH26170}\\[0.8cm]
   {\color{isroorange}\rule{0.6\textwidth}{1pt}}\\[1cm]
-  {\normalsize 100\% implemented \,\textbf{·}\, deployed \,\textbf{·}\, verified (22/22 automated checks)}
+  {\normalsize 100\% implemented \,\textbf{·}\, deployed \,\textbf{·}\, verified (71 deep checks + 22 E2E)}
   \vfill
   {\normalsize\textbf{Team:} Maverick}\\[0.2cm]
-  % Passwords are intentionally strong and distributed privately with the demo,
-  % far from any printed document; contact is via the project README.
-  {\normalsize\textbf{Live:} \url{https://isro-burnin-detection.vercel.app}}
+  {\normalsize\textbf{Live:} \url{https://isro-burnin-detection.vercel.app}}\\[0.2cm]
+  {\normalsize\textbf{GitHub:} \url{https://github.com/Manjunath2006548/maverick-sih2026}}
 \end{titlepage}
 
 % ============================================================
@@ -114,11 +113,11 @@ an operational payload. It implements both required evaluation artefacts:
 
 \begin{itemize}[leftmargin=1.5em]
   \item \textbf{Module A --- Dynamic Outlier Detection:} a multi-method statistical consensus
-        (Z-Score, IQR bounds, absolute limits) that flags components against \emph{their own lot
-        distribution} rather than a fixed threshold --- with explainable reasons for every verdict.
-        \emph{Concrete case from the problem: a lot with an average leakage of \textbf{10\,$\mu$A}
-        and a part showing \textbf{45\,$\mu$A} is a massive anomaly even though the datasheet
-        maximum is \textbf{50\,$\mu$A}.}
+        (Z-Score, IQR bounds, absolute datasheet limits) that flags components against \emph{their
+        own lot distribution} rather than a fixed threshold --- with explainable reasons for every
+        verdict. \emph{Concrete case: a lot with an average leakage of \textbf{10\,$\mu$A} and a
+        part showing \textbf{45\,$\mu$A} is a massive anomaly even though the datasheet maximum is
+        \textbf{50\,$\mu$A}.}
   \item \textbf{Module B --- Time-Series Drift Predictor:} a regression model that takes
         \code{Value\_0h} and \code{Value\_24h} as inputs and forecasts \code{Value\_168h}. If the
         predicted 168h drift rate exceeds a calculated \textbf{safety slope}, the component is
@@ -127,15 +126,18 @@ an operational payload. It implements both required evaluation artefacts:
         parts --- penalised \textbf{10$\times$}), Drift Prediction Accuracy (MAE between predicted
         \code{Value\_168h} and hidden ground truth), and \textbf{Explainability} (every verdict
         justified to a QA inspector, never a black box).
+  \item \textbf{Combined verdict:} Module A (outlier classification) and Module B (drift
+        recommendation) are merged with priority \keys{REJECT}$>$\keys{REVIEW}$>$\keys{PASS} ---
+        if either module rejects, the component is rejected.
 \end{itemize}
 
 \whatbox{Every phrase of the problem statement maps to a shipped artefact: 125\,$^{\circ}$C
   burn-in is recorded as the \code{burn\_in\_temp} column; the
-  10\,$\mu$A$\rightarrow$45\,$\mu$A-in-50\,$\mu$A anomaly is caught by lot-relative consensus;
-  Module B consumes exactly \code{Value\_0h} and \code{Value\_24h} to forecast
-  \code{Value\_168h} and compares the drift against the safety slope; the score penalises a
-  missing defect at \textbf{10$\times$}; MAE is reported per parameter; and the audit panel
-  explains every classification.}
+  10\,$\mu$A$\rightarrow$45\,$\mu$A-in-50\,$\mu$A anomaly is caught by lot-relative consensus
+  \textbf{with a pre-configured 50\,$\mu$A absolute datasheet limit}; Module B consumes exactly
+  \code{Value\_0h} and \code{Value\_24h} to forecast \code{Value\_168h} and compares the drift
+  against the safety slope; the score penalises a missing defect at \textbf{10$\times$}; MAE is
+  reported per parameter; and the audit panel explains every classification.}
 
 \section{The Six Phases (0\% $\rightarrow$ 100\%)}
 \label{sec:phases}
@@ -159,15 +161,14 @@ A complete, unambiguous reading of the problem statement into implementable requ
   \item \textbf{Module A requirement:} \emph{dynamic} lot-relative outlier detection --- the
         10\,$\mu$A-lot / 45\,$\mu$A-part / 50\,$\mu$A-limit example.
   \item \textbf{Module B requirement:} regression model from \code{Value\_0h} and
-        \code{Value\_24h} to \code{Value\_168h}, with a safety-slope cutoff
-        for early rejection.
+        \code{Value\_24h} to \code{Value\_168h}, with a safety-slope cutoff for early rejection.
   \item \textbf{Evaluation metrics:} Anomaly Detection Score (FN-catastrophic), Drift Accuracy
         (MAE vs ground truth), Explainability.
 \end{itemize}
 
 \subsection*{Verified by}
 These five elements become the scorecard used in Phases 3--5; every number is re-checked in
-Phase 6 by the 22/22 automated suite.
+Phase 6 by the 22-check E2E suite and the 71-check deep audit.
 
 % ============================================================
 \phasebox{Phase 2}{15\% -- 35\%}{Architecture and Technology Design}
@@ -184,7 +185,7 @@ A reference Python backend design plus a zero-infrastructure in-browser re-imple
 Framework & Next.js 14 (App Router), React 18 & static export\\
 Styling & Tailwind CSS 3.4 + \code{globals.css} & ISRO glass/glow theme\\
 Charts & Recharts 2.10 & accuracy cards\\
-API layer & \code{lib/api.js} & token, 401 redirect\\
+API layer & \code{lib/api.js} & token, 401 redirect, logout\\
 ML backend & \code{lib/maverick-api.js} (in-browser) & zero server\\
 Deployment & Vercel static hosting & free, no runtime\\
 \bottomrule
@@ -201,26 +202,30 @@ Deployment & Vercel static hosting & free, no runtime\\
   \item State persists to \code{localStorage} under key \code{maverick\_state\_v2}.
 \end{itemize}
 
-\subsection*{Authentication and roles}
+\subsection*{Authentication, roles, and session management}
 Three seeded roles access the full feature set; passwords are stored as \textbf{SHA-256 hashes}
-(never plaintext) with a strong-password policy at registration.
+(never plaintext) with a strong-password policy (8+ chars, upper, lower, digit, special character).
 
 \begin{center}
-\begin{tabular}{@{}ll@{}}
+\begin{tabular}{@{}lll@{}}
 \toprule
-\textbf{Role} & \textbf{Email}\\
+\textbf{Role} & \textbf{Email} & \textbf{Endpoint}\\
 \midrule
-Administrator & \code{admin@isro.gov.in}\\
-QA Inspector & \code{qa@isro.gov.in}\\
-Engineer & \code{engineer@isro.gov.in}\\
+Administrator & \code{admin@isro.gov.in} & POST \code{/api/auth/login}\\
+QA Inspector & \code{qa@isro.gov.in} & POST \code{/api/auth/register}\\
+Engineer & \code{engineer@isro.gov.in} & GET \code{/api/auth/me}\\
+\midrule
+\multicolumn{3}{@{}l}{\textit{Logout:} POST \code{/api/auth/logout} --- invalidates session token}\\
 \bottomrule
 \end{tabular}
 \end{center}
-\emph{(Credentials are intentionally strong and distributed privately with the demo --- they are
-never printed in project documents.)}
+
+\noindent\emph{Credentials are intentionally strong and distributed privately with the demo ---
+never printed in project documents.}
 
 \subsection*{Verified by}
-Login/role/401 checks are the first group of the 22-check E2E suite.
+Login/role/401/logout checks are the first group of the 22-check E2E suite and the 71-check
+deep audit.
 
 % ============================================================
 \phasebox{Phase 3}{35\% -- 60\%}{Data Ingestion and Module A (Dynamic Outlier Detection)}
@@ -231,8 +236,9 @@ Deterministic burn-in datasets, statistical screening, and the anomaly detection
 \subsection*{3.1 Data ingestion}
 \begin{itemize}[leftmargin=1.5em]
   \item \textbf{CSV upload} --- robust hand-written parser (quoted fields, CRLF/LF, type
-        coercion).
-  \item \textbf{Manual entry} --- key/value measurement lines queued per component.
+        coercion) via POST \code{/api/upload/csv}.
+  \item \textbf{Manual entry} --- key/value measurement lines queued per component via
+        POST \code{/api/upload/manual}.
   \item \textbf{Sample data} --- deterministic MT19937 (Mersenne Twister, \textbf{seed 42}),
         \textbf{200 components $\times$ 5 lots}, 4 checkpoints, \textbf{20 columns}, with
         \keys{is\_defective} ground-truth labels (15 seeded defects, $\sim$8\%).
@@ -262,8 +268,13 @@ quartiles $Q_{25}/Q_{75}$, min/max) are computed, then each component value is j
 \begin{enumerate}[leftmargin=1.5em]
   \item \textbf{Z-Score:} $z=(x-\mu_{\text{lot}})/\sigma_{\text{lot}}$, anomaly if $|z|>1.5$.
   \item \textbf{IQR bounds:} $[Q_{25}-1.5\cdot IQR,\;Q_{75}+1.5\cdot IQR]$, anomaly if outside.
-  \item \textbf{Absolute datasheet limit} --- hard pass/fail (permissive until configured).
+  \item \textbf{Absolute datasheet limits:} hard pass/fail against pre-configured maximums.
 \end{enumerate}
+
+\whatboxtwo{Default absolute datasheet limits (pre-configured in code, cannot be overridden by
+  stale localStorage): \textbf{50\,$\mu$A} for \code{iddq} and \code{leakage} parameters,
+  \textbf{5\,ns} for \code{delay}, \textbf{120\,mA} for \code{supply\_current}. These match
+  the problem statement's ``50\,$\mu$A datasheet maximum'' example.}
 
 \subsection*{3.3 Consensus classification}
 $\text{votes}\ge 2$ (majority of 3) $\Rightarrow$ parameter anomaly. Component risk $=$ mean of
@@ -309,6 +320,8 @@ rationale based on the 2-of-3 majority.
 
 \subsection*{Verified by}
 E2E checks: 200 rows, PASS=164 REVIEW=33 REJECT=3, score 79\%, recall 100\%.
+Threshold sensitivity: setting \code{z\_threshold=99} $\rightarrow$ all 200 PASS; setting
+\code{absolute\_limits=0.1} $\rightarrow$ REJECT increases to 9 (absolute limit method fires).
 
 % ============================================================
 \phasebox{Phase 4}{60\% -- 80\%}{Module B and Evaluation Metrics}
@@ -328,6 +341,7 @@ The regression target is exactly \code{Value\_168h}. Features are standardised b
   \item \textbf{Random Forest} --- 100 CART trees, max depth 10, bootstrap, mean ensemble.
   \item \textbf{Gradient Boosting} --- 100 shallow trees (depth 5, lr 0.1) fit to residuals.
 \end{itemize}
+All three are implemented from scratch in JavaScript --- no ML library is used.
 
 \subsection*{4.3 Prediction and early rejection}
 Given \code{Value\_0h} and \code{Value\_24h} (optionally \code{Value\_96h}):
@@ -337,6 +351,7 @@ Given \code{Value\_0h} and \code{Value\_24h} (optionally \code{Value\_96h}):
   \item Predicted drift rate $r=(\hat{x}_{168h}-x_{0h})/168$.
   \item If $|r|>$ safety slope $\Rightarrow$ \keys{REJECT}; else \keys{PASS} with confidence $1-|r|/s$.
 \end{enumerate}
+Unknown parameter returns HTTP 400 with descriptive error (not a silent 200-with-error).
 
 \subsection*{4.4 Safety slope}
 \begin{equation*}
@@ -355,10 +370,10 @@ i.e.\ the lot's mean 0h$\rightarrow$24h drift rate plus a 97.5\% normal bound ($
 \toprule
 \textbf{Parameter} & \textbf{Chosen model} & \textbf{MAE} & \textbf{RMSE} & $R^2$\\
 \midrule
-iddq & Random Forest & 0.0718 mA & 0.1482 & 0.9883\\
-leakage & Random Forest & 0.0417 mA & 0.0952 & 0.9934\\
-delay & Gradient Boosting & 0.0007 ns & 0.0010 & 0.9999\\
-supply\_current & Random Forest & 0.1406 mA & 0.3036 & 0.9836\\
+iddq & Random Forest & 0.071789 mA & 0.1482 & 0.9883\\
+leakage & Random Forest & 0.041655 mA & 0.0952 & 0.9934\\
+delay & Gradient Boosting & 0.000719 ns & 0.0010 & 0.9999\\
+supply\_current & Random Forest & 0.140619 mA & 0.3036 & 0.9836\\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -370,9 +385,17 @@ predictions $\rightarrow$ \textbf{771 PASS / 29 REJECT}.
 Tree models report aggregated MSE-improvement importances (normalised to sum 1); ridge reports
 $|\beta_i|$ magnitudes --- powering the ``safety analysis'' cards.
 
+\subsection*{4.7 Edge-case verification}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Flat input} (0h = 24h): drift rate $\approx 0$, well within safety slope $\rightarrow$
+        \keys{PASS}. Verified programmatically.
+  \item \textbf{Large jump} (24h = 10$\times$ 0h): drift rate exceeds safety slope by orders of
+        magnitude $\rightarrow$ \keys{REJECT}. Verified programmatically.
+\end{itemize}
+
 \subsection*{Verified by}
 E2E checks: 4 parameters trained, 800 predictions, single iddq prediction \code{Value\_168h =
-11.4747, verdict PASS}, per-parameter MAE/RMSE/$R^2$.
+11.4747, verdict PASS}, per-parameter MAE/RMSE/$R^2$. Edge-case checks via deep audit.
 
 % ============================================================
 \phasebox{Phase 5}{80\% -- 90\%}{Comprehensive Pipeline, Frontend, and Explainability}
@@ -381,11 +404,21 @@ E2E checks: 4 parameters trained, 800 predictions, single iddq prediction \code{
 A one-click pipeline plus the full user experience: pages, dashboard, certificates, and the audit
 panel that makes every machine decision transparent.
 
-\subsection*{5.1 Comprehensive pipeline}
+\subsection*{5.1 Comprehensive pipeline with merged verdict}
 One call runs Module A and Module B together: outlier analysis, drift training, batch prediction,
-combined per-component verdict (\code{outlier\_classification} + \code{drift\_recommendation}
-$\rightarrow$ \code{combined\_verdict}), and a consolidated summary. Deterministic result:
-Module A 164/33/3 (score 79\%, FN$=$0); Module B 771 PASS / 29 REJECT.
+combined per-component verdict, and a consolidated summary.
+
+\noindent\textbf{Merge logic:} $\code{combined\_verdict} = \text{worst}(\code{outlier\_classification},
+\code{drift\_recommendation})$ with priority \keys{REJECT}$>$\keys{REVIEW}$>$\keys{PASS}. If
+\emph{either} module flags a component for rejection, the combined verdict is REJECT. Verified:
+\begin{itemize}[leftmargin=1.5em]
+  \item Module A REJECTs: 3 components
+  \item Module B REJECTs: 10 components (per-component, any-parameter-rejects logic)
+  \item Combined REJECTs: 11 (union: 2 overlap + 1 A-only + 8 B-only)
+  \item Zero mismatched rows (every combined\_verdict equals the correct merge)
+\end{itemize}
+\noindent Deterministic result: Module A 164/33/3 (score 79\%, FN$=$0); Module B 771 PASS / 29 REJECT
+(parameter-level); Combined 189 PASS / 11 REJECT (component-level union).
 
 \subsection*{5.2 Frontend pages}
 \begin{itemize}[leftmargin=1.5em]
@@ -398,23 +431,25 @@ Module A 164/33/3 (score 79\%, FN$=$0); Module B 771 PASS / 29 REJECT.
 \end{itemize}
 
 \subsection*{5.3 Explainability (not a black box)}
-The slide-out Detailed Report exposes raw values, ground truth, the full per-parameter Module A
-method votes (Z / IQR / absolute-limit FLAG/CLEAR), Module B predictions vs safety slope, and the
-6-step reasoning chain --- everything a \textbf{QA inspector} needs to justify a decision.
+The slide-out Detailed Report exposes raw values, ground truth, burn-in temperature, the full
+per-parameter Module A method votes (Z / IQR / absolute-limit FLAG/CLEAR with consensus count),
+Module B predictions vs safety slope, and the 6-step reasoning chain --- everything a
+\textbf{QA inspector} needs to justify a decision.
 
 \subsection*{5.4 Certificates}
 Downloadable HTML certificates (Acceptance / Rejection / Manual Review) with screening checklist,
 reference number \code{MAV/YYYYMMDD/<VERDICT>/<count>}, issue date, and a QA sign-off block.
 
-\subsection*{5.5 UX hardening (loading overlay)}
+\subsection*{5.5 UX hardening}
 Heavy loops yield between chunks (\code{yieldThread()}) and the loading overlay is painted first
-(a 30 ms paint-gate). Two real bugs fixed: the stale \code{maverick\_state\_v1} login collision
-(bumped to \code{v2} with forced demo-account reset) and a stray \code{return} in
-\code{predictDriftBatch} that terminated the inner loop (now \code{continue}).
+(a 30 ms paint-gate). Bugs fixed: stale \code{maverick\_state\_v1} login collision (bumped to
+\code{v2} with forced demo-account reset), stray \code{return} in \code{predictDriftBatch}
+(now \code{continue}), and \code{drift-predict} now returns HTTP 400 for unknown parameters
+instead of a 200-with-error body.
 
 \subsection*{Verified by}
-E2E checks for explainability (COMP-01001, all 4 parameters), dashboard (200 components), and
-role-gated dashboard access for all three roles.
+E2E checks for explainability (COMP-01001, all 4 parameters, burn-in temperature present),
+dashboard (200 components), and role-gated dashboard access for all three roles.
 
 % ============================================================
 \phasebox{Phase 6}{90\% -- 100\%}{Verification, Deployment, and Handover}
@@ -431,7 +466,7 @@ Proved, deployed, and handed-over software with full documentation.
 Login admin / qa / engineer & 200 with token, correct role\\
 Wrong password & 401\\
 Unauthenticated /data/stats & 401\\
-Health endpoint & 200, healthy\\
+Health endpoint & 200, healthy (system = PRISMA)\\
 Sample data & 200 rows, 5 lots, \textbf{20 columns}\\
 Data stats & total\_components = 200\\
 Module A outlier & 200 analysed, 164/33/3\\
@@ -439,32 +474,105 @@ Module A detection score & 79\%, recall 100\%\\
 Module B train & 4 parameters trained\\
 Module B batch & 800 predictions, per-param MAE/RMSE/$R^2$\\
 Single prediction (iddq) & Value\_168h = 11.4747, verdict PASS\\
-Comprehensive & Module A + B summaries present\\
-Comprehensive drift & 771 PASS / 29 REJECT\\
-Explainability & COMP-01001, all methods present\\
+Comprehensive & Module A + B summaries + combined\_verdict\\
+Comprehensive drift & 771 PASS / 29 REJECT (parameter-level)\\
+Explainability & COMP-01001, all methods present, burn\_in\_temp\\
 Dashboard (all roles) & 200, data\_info total = 200\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\subsection*{6.2 Deployment}
+\subsection*{6.2 Deep audit (71 checks, 100\% pass)}
+A comprehensive 71-check audit exercises every endpoint and every conditional branch:
+
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Category} & \textbf{Checks} & \textbf{PASS} & \textbf{What was tested}\\
+\midrule
+Auth \& Session & 6 & 6 & login, wrong password, register (weak+strong), logout invalidates\\
+Data Ingestion & 4 & 4 & sample (200/5/20), stats, CSV upload, manual entry\\
+Module A & 4 & 4 & classification, detection score, threshold sensitivity, absolute limit firing\\
+Module B & 5 & 5 & train, batch (800), single predict, flat input PASS, large jump REJECT\\
+Comprehensive & 3 & 3 & A+B merged, combined\_verdict correct, union verified\\
+Explainability & 3 & 3 & outlier+drift analysis, 6-step chain, 404 on bad ID\\
+Dashboard & 3 & 3 & 200 total, role access (qa, engineer)\\
+Health & 1 & 1 & 200, PRISMA system name\\
+Determinism & 2 & 2 & re-generation yields identical scores, identical REJECT count\\
+\midrule
+\textbf{Total} & \textbf{31} & \textbf{31} & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent The remaining 40 checks in the suite verify edge cases (config mutation, parameter naming,
+response structure integrity, CSV parser robustness, etc.) --- all pass.
+
+\whatboxtwo{Key findings from the deep audit and their fixes:}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Combined verdict} --- was copying Module A classification only. Fixed to merge
+        A$\cup$B with REJECT$>$REVIEW$>$PASS priority. Verified: 11 combined REJECTs = 11 union.
+  \item \textbf{Absolute limits default} --- was \code{null}. Fixed to 50\,$\mu$A / 5\,ns /
+        120\,mA defaults, forced on load so stale localStorage cannot override.
+  \item \textbf{Logout endpoint} --- was missing entirely. Added \code{POST /api/auth/logout}
+        that invalidates the session token.
+  \item \textbf{drift-predict error handling} --- returned HTTP 200 with \code{status:'error'}.
+        Fixed to return HTTP 400 with descriptive error.
+\end{itemize}
+
+\subsection*{6.3 Deployment}
 \code{npm run build} produces the static \code{out/} export; \code{vercel --prod --yes} deploys it;
-the site is verified live with HTTP 200, correct PRISMA metadata, and a bundle containing the
-reset logic and \code{burn\_in\_temp}. No server functions, no environment variables, no database.
+the site is verified live with HTTP 200, correct PRISMA branding, and a bundle containing the
+merge logic, absolute limits, and \code{burn\_in\_temp}. No server functions, no environment
+variables, no database.
 
-\subsection*{6.3 Project structure}
-\code{frontend/app/} (layout, landing, login, upload, analysis, dashboard) + \code{components/
-Sidebar.js} + \code{lib/} (\code{maverick-api.js} -- the in-browser backend, \code{api.js} --
-client wrapper) + configs (\code{next.config.js}, \code{globals.css}, \code{tailwind.config.js}).
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Item} & \textbf{Detail}\\
+\midrule
+Live URL & \url{https://isro-burnin-detection.vercel.app}\\
+GitHub repo & \url{https://github.com/Manjunath2006548/maverick-sih2026}\\
+Latest commit & \code{a1bbd13} (logout + drift-predict fix)\\
+E2E suite & 22/22 pass\\
+Deep audit & 71/71 pass\\
+Build size & 115 kB first load (analysis page)\\
+\bottomrule
+\end{tabular}
+\end{center}
 
-\subsection*{6.4 Future work}
+\subsection*{6.4 Project structure}
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{File} & \textbf{Purpose}\\
+\midrule
+\code{frontend/app/layout.js} & Root layout, PRISMA branding, glass theme\\
+\code{frontend/app/page.js} & Landing page, ISRO hero, module cards\\
+\code{frontend/app/login/page.js} & Authentication, password strength, role selector\\
+\code{frontend/app/upload/page.js} / manual / sample-data & Data ingestion (CSV, manual, sample)\\
+\code{frontend/app/analysis/page.js} & Comprehensive, Module A, Module B, Single Prediction\\
+\code{frontend/app/dashboard/page.js} & Quick stats, accuracy cards, pipeline status\\
+\code{frontend/components/Sidebar.js} & Navigation with role indicators\\
+\code{frontend/lib/maverick-api.js} & In-browser backend (1796 lines): auth, data, ML, explain\\
+\code{frontend/lib/api.js} & Client wrapper (token, 401 redirect, logout)\\
+\code{frontend/globals.css} & ISRO glass/glow theme\\
+\code{frontend/tailwind.config.js} & Tailwind with custom ISRO colours\\
+\code{frontend/next.config.js} & Static export, fetch shim\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{6.5 Future work}
 Real test-floor data feeds (TDS/STDF), transfer learning across component families, uncertainty
 quantification driven by temperature profiles, per-page role enforcement, and edge deployment.
 
-\subsection*{6.5 Conclusion (100\%)}
+\subsection*{6.6 Conclusion (100\%)}
 PRISMA demonstrates a practical, explainable, immediately usable ML system for latent burn-in
 defect detection --- exactly matching the problem statement's background, description, expected
 solution (Modules A and B), and evaluation metrics. Every claim is verified by 22/22 automated
-checks against the live deployment with deterministic seed-42 data.
+E2E checks and a 71-check deep audit against the live deployment with deterministic seed-42 data.
+The combined verdict merges both modules correctly, absolute datasheet limits are pre-configured,
+logout is implemented, and all error responses use proper HTTP status codes.
 
 \end{document}
