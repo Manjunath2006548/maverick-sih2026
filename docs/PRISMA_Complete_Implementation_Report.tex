@@ -122,6 +122,41 @@ screened into an operational payload.
 % ==================== Phase 1 ====================
 \phasebox{Phase 1}{0\% -- 15\%}{Problem Framing and Requirement Analysis}
 
+\subsection*{Aim}
+To build a predictive ML system that detects physically strong but electrically weak
+components --- components that pass today's static datasheet pass/fail screening yet carry
+\emph{latent defects} that will fail catastrophically during flight. PRISMA catches them during
+burn-in so they never enter an operational payload.
+
+\subsection*{Why we are doing this (motivation)}
+\begin{itemize}[leftmargin=1.5em]
+  \item In burn-in screening, a part is rejected only when a parameter crosses an absolute
+        datasheet limit (e.g.\ 50\,$\mu$A Iddq). A part drifting 45\,$\mu$A in a 10\,$\mu$A lot
+        still ships.
+  \item Field failures of such ``escaped'' components are catastrophic: mission loss, payload
+        failure, and loss of investment. One failed part in one spacecraft can destroy an entire
+        launch.
+  \item Burn-in generates \emph{time-series} data (0h/24h/96h/168h) that encodes the health
+        trajectory of every component --- but static limits ignore the trajectory. The trend is
+        the signal.
+  \item Manual review of thousands of parts does not scale. A dynamic, lot-relative, explainable
+        ML system scales and is auditable by QA inspectors.
+\end{itemize}
+
+\subsection*{Use case (what this system is for)}
+A QA inspector at an ISRO test floor uploads burn-in parametric data for a lot of components.
+PRISMA (i) flags lot-relative outliers with Z-score + IQR + absolute limits, (ii) forecasts the
+168h parameter from the 0h/24h trend and rejects parts whose predicted drift exceeds a
+statistically-derived safety slope, and (iii) returns a merged REJECT / REVIEW / PASS verdict
+with a 6-step explanation chain and downloadable acceptance/rejection certificates. No defective
+component escapes the floor.
+
+\subsection*{Where we have implemented}
+All logic exists in-browser (\code{lib/maverick-api.js}, 1796 lines) so the system runs with zero
+servers and zero ML libraries --- fully from scratch --- and is deployed as a static site at
+\url{https://isro-burnin-detection.vercel.app}. Source lives at
+\url{https://github.com/Manjunath2006548/maverick-sih2026} (commit \code{67ead34}).
+
 \subsection*{Deliverable}
 A complete, unambiguous reading of the problem statement into implementable requirements.
 
@@ -633,5 +668,104 @@ and a 71-check deep audit against the live deployment with deterministic seed-42
 combined verdict merges both modules correctly, absolute datasheet limits are pre-configured,
 logout is implemented, all edge cases are handled, and all error responses use proper HTTP
 status codes.
+
+% ==================== 7. OPERATION GUIDE ====================
+\section{How to Operate the System (Step-by-Step)}
+
+\noindent This section is a from-scratch, hands-on guide for anyone --- jury, evaluator, or QA
+inspector --- to operate PRISMA end-to-end on the live deployment. No code or installation is
+required; the entire system runs in the browser.
+
+\subsection*{Step 1 --- Open the system}
+Type \url{https://isro-burnin-detection.vercel.app} in any modern browser. The landing page shows
+the ISRO hero, the Module A / Module B cards, and the three evaluation metric cards.
+
+\subsection*{Step 2 --- Log in}
+\begin{enumerate}[leftmargin=1.5em]
+  \item Click \keys{Get Started} to open \code{/login}.
+  \item Choose the \keys{Sign In} pill (left side of the toggle).
+  \item Use any demo account --- e.g.\ email \code{qa@isro.gov.in}, password below
+        (\ref{step-pw}).
+  \item Click \keys{Login}. The role colour appears in the sidebar (QA = light blue).
+\end{enumerate}
+New users may instead click \keys{Register}, pick a role, and create an account --- the password
+strength meter enforces 8+ characters with upper/lower/digit/special.
+
+\begin{enumerate}[leftmargin=1.5em]\label{step-pw}
+  \item \textbf{Admin:} \code{admin@isro.gov.in} / \code{Isro@2026}
+  \item \textbf{QA Inspector:} \code{qa@isro.gov.in} / \code{Isro@2026}
+  \item \textbf{Engineer:} \code{engineer@isro.gov.in} / \code{Isro@2026}
+\end{enumerate}
+
+\subsection*{Step 3 --- Load burn-in data}
+All routes sit behind the 401-gated login.
+\begin{enumerate}[leftmargin=1.5em]
+  \item \keys{Upload Data} (sidebar $\rightarrow$ \code{/upload}).
+  \item Pick one of three tabs:
+    \begin{itemize}[leftmargin=1.5em]
+      \item \keys{Sample Data} --- one click generates the deterministic seed-42 dataset
+            (200 components, 5 lots, 20 columns, $\sim$8\% defect rate). Recommended for a demo.
+      \item \keys{CSV Upload} --- drag a \code{.csv}; Excel files are rejected with a clear
+            message. Preview shows the first 10 rows.
+      \item \keys{Manual Data} --- type \code{key: value} lines per component and queue them.
+    \end{itemize}
+  \item Once ready a green banner appears: ``Data loaded (200 components / 5 lots)''.
+\end{enumerate}
+
+\subsection*{Step 4 --- Run the analysis}
+Navigate to \keys{Analysis} (\code{/analysis}) and select a tab:
+\begin{enumerate}[leftmargin=1.5em]
+  \item \keys{Comprehensive} (recommended) --- runs Module A + Module B together,
+        trains all four parameter models, and shows the merged verdict summary.
+  \item \keys{Module A} --- lot-relative outlier detection only.
+  \item \keys{Module B} --- drift training + batch prediction with per-parameter
+        MAE / RMSE / $R^2$ cards.
+  \item \keys{Single Prediction} --- pick a parameter and a component (or enter
+        \code{Value\_0h}/\code{Value\_24h}/\code{Value\_96h}) to get the 168h forecast and a
+        PASS/REJECT recommendation. Example verified number: iddq $\rightarrow$
+        \code{Value\_168h = 11.4747}, PASS.
+\end{enumerate}
+
+\subsection*{Step 5 --- Read the results}
+\begin{enumerate}[leftmargin=1.5em]
+  \item The summary shows \keys{PASS} (green, e.g.\ 164), \keys{REVIEW} (orange, 33) and
+        \keys{REJECT} (red, 3). Each count is a \textbf{clickable filter}.
+  \item Click any component row to open the classification detail overlay:
+    Module A votes per parameter (Z / IQR / absolute = FLAG or CLEAR), Module B prediction vs
+    safety slope (Rm $\cdot$ 1.96), and the \textbf{6-step reasoning chain}.
+  \item Click \keys{Explain} in the navigation for the full explainability panel of any
+        component (e.g.\ \code{COMP-01001}).
+  \item Download the \keys{Acceptance / Rejection / Manual Review} HTML certificate. The
+        certificate includes the 8-item screening checklist and the QA sign-off block.
+\end{enumerate}
+
+\subsection*{Step 6 --- Monitor with the dashboard}
+\keys{Dashboard} shows quick stats (Components / Lots / Anomalies / Models), Module A verdict
+bars, Module B accuracy cards, and the 4-step system pipeline visual. Accessible to every role.
+
+\subsection*{Step 7 --- Sign out and secure the session}
+\keys{Sign Out} in the sidebar calls \code{POST /api/auth/logout} and destroys the token.
+
+\subsection*{Step 8 --- How to check/verify the implementation (for evaluators)}
+No code reading is needed to verify correctness --- the demo is self-verifying:
+\begin{enumerate}[leftmargin=1.5em]
+  \item On sample data, the analysis runs with \textbf{seed 42}; reproduced numbers are locked:
+        PASS=164 / REVIEW=33 / REJECT=3, detection score 79\%, recall 100\%, drift
+        771 PASS / 29 REJECT, iddq 168h prediction 11.4747.
+  \item Open the browser console and evaluate \code{window.\_\_maverickApi} --- the internal
+        \code{handleApiRequest}, \code{state}, and \code{generateFlatData} are exposed for
+        on-the-spot verification.
+  \item Automated suites in the repository: \code{test-e2e.cjs} (22 checks) and
+        \code{deep-audit.cjs} (71 checks) run against the exact same API and assert every number
+        in this report.
+  \item In-app: click the health check (system = \code{PRISMA}, version \code{1.0.0}).
+  \item Verify thresholds: set \code{z\_threshold = 99}$\rightarrow$all 200 PASS;
+        \code{absolute\_limits = 0.1}$\rightarrow$REJECT rises to 9.
+\end{enumerate}
+
+\whatbox{Total walkthrough time: under 2 minutes. Login $\rightarrow$ Sample Data
+  $\rightarrow$ Comprehensive Analysis $\rightarrow$ click a REJECT component
+  $\rightarrow$ read the 6-step explanation $\rightarrow$ download its certificate ---
+  every requirement of the problem statement is demonstrated live.}
 
 \end{document}
