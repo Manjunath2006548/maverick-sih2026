@@ -15,6 +15,12 @@ const STORE_KEY = 'maverick_state_v2';
 const EXCLUDE_COLS = ['component_id', 'lot_id', 'is_defective', 'test_hour', 'burn_in_temp'];
 const PARAM_PREFIXES = ['iddq', 'leakage', 'delay', 'supply_current'];
 const NORM_975 = 1.959963984540054;
+const DEFAULT_ABSOLUTE_LIMITS = {
+  iddq_0h: 50, iddq_24h: 50, iddq_96h: 50, iddq_168h: 50,
+  leakage_0h: 50, leakage_24h: 50, leakage_96h: 50, leakage_168h: 50,
+  delay_0h: 5, delay_24h: 5, delay_96h: 5, delay_168h: 5,
+  supply_current_0h: 120, supply_current_24h: 120, supply_current_96h: 120, supply_current_168h: 120,
+};
 
 /* ---------------- utils ---------------- */
 
@@ -314,7 +320,11 @@ function defaultState() {
     training_metrics: {},
     safety_slopes: {},
     feature_importances: {},
-    detectorConfig: { z_threshold: 1.5, iqr_multiplier: 1.5, absolute_limits: null },
+    detectorConfig: {
+      z_threshold: 1.5,
+      iqr_multiplier: 1.5,
+      absolute_limits: DEFAULT_ABSOLUTE_LIMITS,
+    },
   };
 }
 
@@ -339,7 +349,9 @@ function loadState() {
     demoAccounts.forEach((email) => {
       mergedUsers[email] = base.users[email];
     });
-    return { ...base, ...parsed, users: mergedUsers, tokens: parsed.tokens || {} };
+    const mergedCfg = { ...base.detectorConfig, ...(parsed.detectorConfig || {}) };
+    mergedCfg.absolute_limits = base.detectorConfig.absolute_limits;
+    return { ...base, ...parsed, users: mergedUsers, detectorConfig: mergedCfg, tokens: parsed.tokens || {} };
   } catch (e) {
     return defaultState();
   }
@@ -1307,20 +1319,36 @@ async function runComprehensive(records, columns, config) {
     },
   };
 
-  const combinedResults = outlierResults.map((r, i) => ({
-    component_id: r.component_id || `COMP-${i}`,
-    lot_id: r.lot_id || '',
-    outlier_classification: r.classification,
-    outlier_risk: r.overall_risk_score,
-    drift_recommendation: null,
-    combined_verdict: r.classification,
-  }));
-
   const driftPart = await runDriftPipeline(records, columns);
   if (driftPart) {
     summary.module_b.drift_distribution = driftPart.distribution;
     summary.module_b.accuracy = driftPart.accuracy;
   }
+
+  const driftVerdicts = new Map();
+  if (state.drift_results) {
+    for (const r of state.drift_results) {
+      const key = String(r.component_index);
+      const driftVerdict = r.recommendation === 'REJECT' ? 'REJECT' : 'PASS';
+      if (driftVerdict === 'REJECT' || !driftVerdicts.has(key)) driftVerdicts.set(key, driftVerdict);
+    }
+  }
+  const mergeVerdict = (a, b) =>
+    a === 'REJECT' || b === 'REJECT' ? 'REJECT'
+    : a === 'REVIEW' || b === 'REVIEW' ? 'REVIEW'
+    : 'PASS';
+
+  const combinedResults = outlierResults.map((r, i) => {
+    const driftRec = driftVerdicts.get(String(i)) || 'PASS';
+    return {
+      component_id: r.component_id || `COMP-${i}`,
+      lot_id: r.lot_id || '',
+      outlier_classification: r.classification,
+      outlier_risk: r.overall_risk_score,
+      drift_recommendation: driftRec,
+      combined_verdict: mergeVerdict(r.classification, driftRec),
+    };
+  });
   state.outlier_results = outlierResults;
   state.outlier_summary = {
     total_analyzed: outlierResults.length,

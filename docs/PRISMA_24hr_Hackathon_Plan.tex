@@ -1,0 +1,549 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---------- Packages ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{eso-pic}
+\usepackage[most]{tcolorbox}
+
+% ---------- Page border on every page (full 4 sides) ----------
+\AddToShipoutPictureBG{%
+  \AtPageLowerLeft{%
+    \setlength{\fboxrule}{2pt}\setlength{\fboxsep}{0pt}%
+    \color{isroblue}%
+    \fbox{\parbox[c][\dimexpr\paperheight-2\fboxrule][c]{\dimexpr\paperwidth-2\fboxrule}{}}%
+  }%
+}
+
+% ---------- Colours (ISRO theme) ----------
+\definecolor{isroblue}{RGB}{0,80,160}
+\definecolor{isroorange}{RGB}{230,110,20}
+\definecolor{accent}{RGB}{40,116,240}
+\definecolor{solgreen}{RGB}{0,130,60}
+
+% ---------- Meta ----------
+\hypersetup{
+  colorlinks=true,
+  linkcolor=accent,
+  urlcolor=accent,
+  pdftitle={PRISMA: 24-Hour Hackathon Execution Plan (6 Phases)},
+  pdfauthor={Manjunath Bhaskar Hebbar}
+}
+
+% ---------- Header / Footer ----------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{isroblue}\textbf{PRISMA} -- 24-Hour Hackathon Sprint Plan}
+\fancyhead[R]{\small Sprint Plan}
+\fancyfoot[C]{\thepage}
+
+% ---------- Section formatting ----------
+\titleformat{\section}{\Large\bfseries\color{isroblue}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{isroorange}}{\thesubsection.}{0.6em}{}
+
+% ---------- Helper commands ----------
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\solution}[1]{\par\vspace{0.4em}\noindent
+  \begin{tcolorbox}[colback=solgreen!8,colframe=solgreen,
+    title={\sffamily\bfseries\color{white}The Solution},arc=2pt,boxrule=1pt] #1 \end{tcolorbox}\par\vspace{0.6em}}
+
+\newcommand{\phasebox}[3]{\par\vspace{0.8em}\noindent
+  \begin{tcolorbox}[colback=isroblue!6,colframe=isroblue,
+    title={\sffamily\bfseries\color{white}#1 \quad (#2)},arc=2pt,boxrule=1.2pt]
+    \textbf{Objective:} #3%
+  \end{tcolorbox}\par\vspace{0.4em}}
+
+\begin{document}
+
+% ============================================================
+% TITLE PAGE
+% ============================================================
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\Huge\bfseries\color{isroblue} PRISMA}\\[0.6cm]
+  {\LARGE ISRO Burn-In Anomaly Detection System}\\[0.4cm]
+  {\large \textbf{The 24-Hour Marathon Plan --- 6 Phases}}\\[1.8cm]
+  {\large\itshape Project status: build \textbf{100\% complete}, deployed and verified
+  (22/22 automated checks). The next 24 hours convert engineering into a winning submission.}\\[1.2cm]
+  {\color{isroorange}\rule{0.6\textwidth}{1pt}}\\[0.6cm]
+  {\large\textbf{Submitted to:} \texttt{innovations.papers@ispa.space}}\\[0.3cm]
+  {\large\textbf{Deadline:} 30 September 2026}\\[0.3cm]
+  {\large\textbf{Live site:} \url{https://isro-burnin-detection.vercel.app}}
+  \vfill
+  {\small The 6 phases: \textbf{Build} $\rightarrow$ \textbf{Prove} $\rightarrow$ \textbf{Sell} $\rightarrow$ \textbf{De-risk} $\rightarrow$ \textbf{Pack} $\rightarrow$ \textbf{Polish}.}
+\end{titlepage}
+
+% ============================================================
+\section{The 6-Phase Master Plan}
+\label{sec:plan}
+
+\noindent Six phases, each with a single deliverable, a clear \emph{objective} and a concrete
+\emph{solution}. Total effort: 16 focused hours + 8 hours buffer/rest.
+
+% ------------------------------------------------------------
+\phasebox{Phase 1}{Hours 0--3}{Ship the Turnkey PDF Deliverable}
+
+\textbf{What to do}
+\begin{itemize}[leftmargin=1.5em]
+  \item Upload \code{docs/MAVERICK\_Implementation\_Report.tex} to Overleaf.
+  \item Compile \textbf{twice} (TOC pass + content pass); export the PDF.
+  \item Inspect: full-page blue border, title page, TOC, all tables, code blocks.
+  \item Export the renamed file \code{PRISMA\_Implementation\_Report.pdf}.
+\end{itemize}
+
+\solution{
+  If Overleaf is slow or errors, use \textbf{PdfLaTeX on Overleaf with the pre-loaded
+  \texttt{geometry} and \texttt{tcolorbox} packages}; compile once to catch undefined
+  references, fix, then compile again for the TOC. Do not tweak content at this stage ---
+  the source is already reviewed and balanced. A fallback of \code{pdflatex} is unnecessary;
+  Overleaf compiles the exact same \code{.tex} untouched.
+}
+
+% ------------------------------------------------------------
+\phasebox{Phase 2}{Hours 3--7}{Record the Winning Demo Video}
+
+\textbf{What to do}
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Login} as the three roles: \code{admin@}, \code{qa@},
+        \code{engineer@}\code{.isro.gov.in}.
+  \item \textbf{Data}: 200 components, 5 lots, 20 columns --- statistics incl.\ chamber temperature.
+  \item \textbf{Module A}: narrate the ``lot mean 10\,$\mu$A, part at 45\,$\mu$A'' anomaly
+        (limit 50\,$\mu$A) being caught; show 164/33/3 and the 79\% detection score.
+  \item \textbf{Module B}: train, then the 800-prediction batch with MAE / RMSE / $R^2$ cards.
+  \item \textbf{Single prediction}: 0h/24h input $\rightarrow$ predicted 168h value +
+        safety-slope early reject.
+  \item \textbf{Comprehensive} one-click pipeline $\rightarrow$ \textbf{explainability}
+        (Z-score / IQR / absolute-limit votes + 6-step reasoning).
+  \item \textbf{Certificate} download + \textbf{reload / re-login} persistence proof.
+\end{enumerate}
+
+\solution{
+  Record the narration \textbf{before} clicking, using the fixed script above, with OBS
+  (or built-in recorder) at 1080p. Keep every video $\le$ 3 minutes; make the anomaly
+  (45\,$\mu$A vs 10\,$\mu$A lot mean) the emotional peak. If one take fails, do not restart
+  --- record a correction cut; edit in CapCut/Clipchamp, add shot captions and one closing
+  screen with the live URL. Save the raw file as a backup.
+}
+
+% ------------------------------------------------------------
+\phasebox{Phase 3}{Hours 7--10}{Build the Sales Pitch Deck}
+
+\textbf{What to do}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{1 Problem:} static limits miss latent defects that drift inside absolute limits.
+  \item \textbf{2 Insight:} the lot is the control chart --- detect relative anomalies, not
+        fixed thresholds.
+  \item \textbf{3 Solution:} Module A (dynamic consensus screening) + Module B
+        (drift predictor, safety slope).
+  \item \textbf{4 Proof:} deterministic table --- recall 100\%, score 79\%, $R^2$ 0.9999,
+        FN $= 0$.
+  \item \textbf{5 Architecture:} entire ML engine in the browser; zero server, zero DB,
+        instantly deployable --- a deliberate engineering bet.
+  \item \textbf{6 Impact \& Roadmap:} data-acquisition GUI, multi-lot forecasting, printed
+        certificates, API export.
+\end{itemize}
+
+\solution{
+  Build the deck as \textbf{6 slides, one idea each}, in Google Slides, ISRO-blue theme
+  matching the site. Rules: no walls of text (max 6 bullet words per line), one live-demo
+  clip embedded, and the results table on slide 4 twice --- once as metrics, once as a
+  before/after ``static vs PRISMA'' contrast.
+}
+
+% ------------------------------------------------------------
+\phasebox{Phase 4}{Hours 10--13}{De-risk the Live Demonstration}
+
+\textbf{What to do}
+\begin{itemize}[leftmargin=1.5em]
+  \item Test the production URL on an \textbf{incognito} browser window (clean
+        \code{localStorage}) --- proves the stale-login fix.
+  \item Run the full walkthrough on the hackathon venue WiFi and on a hotspot.
+  \item Prepare the offline fallback: \code{npm run dev} from \code{frontend/}.
+  \item Verify all three demo accounts work with zero stale state.
+\end{itemize}
+
+\solution{
+  The app is fully client-side (fetch-shim serves \code{/api/*} from the bundle), so it
+  survives bad networks. Concretely: load the production URL \textbf{once}, hard-reload with
+  \code{Ctrl+Shift+R}, log in, and keep a phone hotspot + a laptop with the local build as
+  two independent fallbacks. If the site is blocked, demo from the built \code{out/} folder
+  opened as \code{file://}.
+}
+
+% ------------------------------------------------------------
+\phasebox{Phase 5}{Hours 13--16}{Package the Submission}
+
+\textbf{What to do}
+\begin{itemize}[leftmargin=1.5em]
+  \item Submission folder with: PDF, demo video, pitch deck, live URL, GitHub link.
+  \item Rename the repository \code{maverick-sih2026} $\rightarrow$ \code{prisma-sih2026}
+        so the submitted link matches the brand.
+  \item Sanity-check the submission email \texttt{innovations.papers@ispa.space},
+        subject, and attachment limits.
+  \item Distribute credentials only by private channel; no plaintext passwords in
+        documents/video.
+\end{itemize}
+
+\solution{
+  Use one checklist file in the folder. For the repo rename: GitHub $\rightarrow$ Settings
+  $\rightarrow$ rename; origin follows automatically. Re-pull and \code{git remote -v} to
+  confirm. If the video is too large for email, put it as \emph{unlisted} YouTube and
+  include the link in the mail body.
+}
+
+% ------------------------------------------------------------
+\phasebox{Phase 6}{Hours 16--24}{Rehearse, Harden, Rest}
+
+\textbf{What to do}
+\begin{itemize}[leftmargin=1.5em]
+  \item Full dress rehearsal: 3-minute pitch + live demo, timed, with questions.
+  \item Re-run the 22 automated checks if any code changed.
+  \item Rehearse the five hardest judge questions (see Q\&A bank below).
+  \item Sleep 5--6 hours before the evaluation window.
+\end{itemize}
+
+\solution{
+  Split labour: presenter rehearses slides, operator rehearses the live demo, one team member
+  keeps the Q\&A bank. All three demo accounts and the URL are pinned to the deck's last
+  slide. Resting is a deliverable --- a tired team loses more points than missing polish.
+}
+
+% ============================================================
+\section{Judge Q\&A Bank --- Slide by Slide}
+\label{sec:qa}
+
+\noindent Every slide in the deck is grilled below: the question a judge is most likely to ask,
+followed by the exact answer the team should give. Rehearse all of them aloud at least once.
+
+\newcommand{\qa}[2]{%
+  \par\vspace{0.9em}\noindent\textbf{\color{accent}Q: #1}\par\vspace{0.2em}
+  \noindent\textit{A:} #2\par
+}
+
+% ============================================================
+\subsection{Slide 1 --- Basic Details}
+
+\qa{Explain your problem statement in under 30 seconds.}{
+  SIH 2026----1:0170 (Smart Automation theme): too many good chips are rejected and too many
+  bad (``latent'') chips are shipped, because screening uses fixed datasheet limits only.
+  PRISMA screens each component against its \emph{own lot distribution} and predicts its
+  \emph{168-hour drift} from early burn-in readings, so defects inside absolute limits are
+  caught early --- automatically and explainably.
+}
+
+\qa{Which theme and PS category does this fall under?}{
+  Theme: \textbf{Smart Automation}. PS Category: \textbf{Software}. It is a pure software
+  analytics platform; no hardware changes are proposed.
+}
+
+\qa{Why did your team pick this specific problem statement?}{
+  It is a real failure mode the organisers describe (latent defects passing static limits),
+  it has a clear measurable goal (zero escaped defective parts), and it lets a small team
+  deliver the full ML lifecycle --- data, models, evaluation, explainability --- in one
+  self-contained web app.
+}
+
+\qa{Who is the end user inside ISRO / ISPA?}{
+  Three roles: \textbf{Admin} (oversight and lot management), \textbf{QA Inspector}
+  (runs screening and signs certificates), and \textbf{Burn-in Engineer} (uploads data,
+  trains models, reviews drift forecasts).
+}
+
+\qa{Why is burn-in screening critical for aerospace components?}{
+  Burn-in accelerates early-life failures so they fail \emph{at the test floor}, not in
+  orbit. Screening decides which components proceed --- an escaped defective part is
+  catastrophic and unrecoverable after launch, so the false-negative cost is extreme.
+}
+
+% ============================================================
+\subsection{Slide 2 --- Innovation and Uniqueness}
+
+\qa{What is a ``latent defect'' and why do absolute datasheet limits miss it?}{
+  A latent defect drifts gradually (e.g.\ quiescent current rising 10\,$\mu$A $\rightarrow$
+  45\,$\mu$A) while staying below the datasheet worst-case limit (50\,$\mu$A). Static pass/fail
+  tests see ``within limit'' and ship it; the defect then fails catastrophically in the field.
+  PRISMA compares each component with its \emph{lot's own distribution} (Z-score, IQR,
+  absolute limits, 2-of-3 vote) and with its \emph{time-series drift}, so anomalies inside
+  absolute limits are still flagged.
+}
+
+\qa{Why did you put the entire ML backend in the browser? Isn't Python better?}{
+  Python is great for research, but this is a \textbf{delivery} problem: a pure static site
+  with zero server, zero container, zero database. The whole API is served from a
+  client-side fetch shim, so the app is instantly deployable, free to host, and works on any
+  network --- including a hackathon venue with no internet. All algorithms were rebuilt in
+  JavaScript, so the maths is identical to the reference design.
+}
+
+\qa{How do you stop the UI from freezing during analysis?}{
+  Every heavy loop calls \code{yieldThread()} (an \code{await}-based scheduler) and the
+  progress overlay is painted \emph{first}, before any computation starts
+  (a ``paint-gate''). The user keeps a live loading/progress bar during Module A, Module B
+  and the 800-component batch instead of a frozen tab.
+}
+
+\qa{Explain Module A (Dynamic Outlier Detection).}{
+  For every parameter (iddq, leakage, delay, supply\_current) at each checkpoint, PRISMA
+  computes a \textbf{Z-score}, an \textbf{IQR outlier test}, and an \textbf{absolute datasheet
+  limit} check against the lot's own statistics. A component must satisfy a
+  \textbf{2-of-3 consensus} to be called anomalous. Result: \textbf{164 PASS / 33 REVIEW /
+  3 REJECT}, detection score \textbf{79\%}. The $45\,\mu$A-versus-$10\,\mu$A-lot-mean case is
+  caught because it is \emph{relative} to its lot, not just absolute.
+}
+
+\qa{Why a 2-of-3 consensus instead of one weighted score?}{
+  No single statistic is safe: Z-score assumes approximate normality, IQR is purely
+  rank-based, absolute limits are the datasheet floor. Requiring agreement between at least
+  two diverse tests suppresses single-method false alarms while keeping high sensitivity ---
+  a simple, auditable robustness trick.
+}
+
+\qa{Explain Module B (Time-Series Drift Prediction).}{
+  Module B engineers predictive features from the 0h and 24h checkpoints (drift, drift rate,
+  percentage change; optionally the 96h checkpoint), then trains \textbf{Ridge Regression},
+  \textbf{Random Forest} and \textbf{Gradient Boosting} --- all built from scratch --- to
+  forecast the \textbf{168h} value of each parameter. If the forecast drift crosses the
+  lot's \textbf{safety slope}, the component is marked for \textbf{early rejection}.
+}
+
+\qa{What is the safety slope and how is early rejection decided?}{
+  The safety slope is the lot-mean drift rate plus $1.96\,\sigma$ (a 97.5\% normal bound;
+  with fewer than 5 samples it degrades to $2\times$ the absolute mean). A component whose
+  predicted drift rate exceeds that slope is REJECT; near the slope it is REVIEW. On the
+  reference set: \textbf{800} drift predictions, \textbf{771 PASS / 29 REJECT}.
+}
+
+\qa{How are Module A and Module B combined into a final verdict?}{
+  The anomaly verdict (Module A), the drift verdict (Module B), and the risk score are merged
+  into a single \textbf{PASS / REVIEW / REJECT} decision per component, with the dominant
+  reason surfaced first --- plus a risk level and a full explanation.
+}
+
+\qa{How does your explainability panel work?}{
+  For every flagged component the audit panel shows: per-parameter reasons, which method(s)
+  voted anomalous (Z / IQR / absolute limit), the drift forecast vs the safety slope, and a
+  \textbf{6-step reasoning chain} that walks from raw measurement to final verdict --- so a
+  QA inspector never has to trust a black box.
+}
+
+\qa{Why automatic certificates, and what do they contain?}{
+  Verifiable acceptance documentation is required on the test floor. PRISMA emits an HTML
+  certificate per component with the screening checklist, a reference number, the verdict,
+  and a QA sign-off block --- downloadable and re-auditable, replacing handwritten forms.
+}
+
+\qa{How is data brought into the system?}{
+  Three paths: \textbf{CSV upload} (hand-written parser), \textbf{manual entry} per
+  component, and \textbf{generated sample data} using the deterministic Mersenne Twister
+  (seed 42) --- 200 components, 5 lots, 4 checkpoints --- so every demo is reproducible.
+}
+
+\qa{What genuinely differentiates PRISMA from a standard statistical QC package?}{
+  Three things: (1) it \emph{predicts} the 168h state instead of only classifying today's
+  readings, (2) the lot-relative consensus + safety-slope logic catches defects that fixed
+  limits miss, and (3) everything runs static-client-side with full per-component
+  explainability and printable certificates --- no server or database is needed at all.
+}
+
+% ============================================================
+\subsection{Slide 3 --- Technical Approach}
+
+\qa{How is the sample data generated and why is it deterministic?}{
+  A from-scratch MT19937 (Mersenne Twister) with \textbf{seed 42} generates 200 components
+  across 5 lots with 4 burn-in checkpoints (0h/24h/96h/168h) and 20 columns, including a
+  \code{burn\_in\_temp} chamber column of 124--126\,$^{\circ}$C centred on the 125\,$^{\circ}$C
+  ESS standard. Same seed $\Rightarrow$ same numbers on every machine --- proofs are repeatable
+  and tests are stable.
+}
+
+\qa{Walk us through the methodology, end to end.}{
+  Ingest (CSV / manual / sample) $\rightarrow$ statistics $\rightarrow$ \textbf{Module A}
+  lot-relative consensus screening $\rightarrow$ \textbf{Module B} feature engineering,
+  from-scratch training and drift forecasting $\rightarrow$ safety-slope early rejection
+  $\rightarrow$ combined PASS/REVIEW/REJECT $\rightarrow$ explainability panel
+  $\rightarrow$ certificate export. One ``Comprehensive'' button runs the full pipeline.
+}
+
+\qa{Why 200 components $\times$ 5 lots $\times$ 4 checkpoints, 20 columns?}{
+  It is a realistic test-floor batch: each lot exercises its own distribution (which is the
+  whole point of relative screening) and the 0/24/96/168h cadence matches the ESS burn-in
+  schedule. The chamber temperature is recorded (124--126\,$^{\circ}$C) as auditable
+  \emph{environment context} but is excluded from Module A screening so it cannot dilute the
+  device-risk metric.
+}
+
+\qa{Which features does Module B engineer, and why?}{
+  From the checkpoints it derives \textbf{drift} (value change), \textbf{drift rate}
+  (per-hour), \textbf{percentage change} and \textbf{acceleration} (second-order change).
+  These capture \emph{parametric degradation over time}, which is the physical signature of a
+  latent early-life failure.
+}
+
+\qa{Why Ridge, Random Forest and Gradient Boosting --- and why from scratch?}{
+  Three diverse regressors for ensemble-vote robustness: a linear regularised baseline
+  (Ridge), a non-linear tree ensemble (RF), and an adaptive boosting learner (GB). Building
+  them from scratch in JavaScript was demanded by the zero-dependency, static-site
+  constraint --- and it proves the maths, since no ML library is doing the work. Best-case
+  accuracy is $R^2=\mathbf{0.9999}$ (propagation delay) with MAE, RMSE, MAPE reported per
+  parameter (worst MAE 0.14\,mA supply current).
+}
+
+\qa{Why is the prediction horizon 168h (7 days)?}{
+  Burn-in is typically a 7-day (168h) screen; 168h is the decision point at which the
+  component must be known-good. Predicting that condition from the early 0h/24h readings
+  gives the earliest reliable verdict --- which is why early rejection matters.
+}
+
+\qa{How does the anomaly-detection score work?}{
+  \code{Score = (TP + TN -- 10*FN -- 1*FP) / N}, clamped to 0. A \textbf{False Negative is
+  weighted 10$\times$} a False Positive because an escaped defective part in orbit is
+  catastrophic, while a manual review (FP) is merely inconvenient. Reference score: \textbf{79\%}
+  with \textbf{100\% recall} and \textbf{zero} escaped defects.
+}
+
+\qa{How is the drift forecast actually verified?}{
+  The forecast 168h value is compared against the held-out true value using MAE / RMSE /
+  MAPE and $R^2$. The UI shows per-parameter accuracy cards so a judge can see that the model
+  is genuinely predictive --- not a threshold heuristic.
+}
+
+% ============================================================
+\subsection{Slide 4 --- Feasibility and Viability}
+
+\qa{How is this deployed with zero server cost?}{
+  Next.js \code{output: 'export'} produces a pure static bundle. The fetch shim in
+  \code{lib/maverick-api.js} intercepts every \code{/api/*} call and serves it from the
+  bundle, so there is literally no backend process to pay for or patch --- deployed free on
+  Vercel static hosting.
+}
+
+\qa{How is the platform validated? What tests prove it works?}{
+  A 22-check automated suite runs the entire pipeline against seed-42 data and pins exact
+  numbers (164/33/3, score 79\%, recall 100\%, 800 drift predictions 771/29, pred168
+  11.4747 etc.). If any feature changes those numbers, the suite fails --- so ``it works''
+  is shown, not claimed.
+}
+
+\qa{How would it scale to real test-floor data (thousands of components)?}{
+  Module A is per-lot and streamable; Module B trains per lot and trains quickly even for
+  hundreds of components (models are lightweight). Larger deployments would move the same
+  algorithms to a worker (real edge deployment) without changing the maths. The browser is
+  the demo surface; the pipeline is the product.
+}
+
+\qa{What if the demo network fails at the venue?}{
+  The app is fully client-side, so it works offline. Fallbacks: open the built \code{out/}
+  folder over \code{file://}, run \code{npm run dev} locally, or use a phone hotspot. Three
+  independent demo paths are rehearsed before the evaluation.
+}
+
+\qa{Is it accurate enough for space-grade QA?}{
+  Reference results: 100\% recall, zero escaped defective parts, anomaly score 79\%,
+  $R^2$ up to 0.9999, FN weighted $10\times$ --- tuned so that no defective component
+  slips through. Real production adoption would re-tune thresholds on flight-test history,
+  but the framework and its safeguards are in place.
+}
+
+\qa{What does it cost to run and maintain?}{
+  Roughly zero marginal cost: static hosting (free tier), no servers, no database, no ML
+  cloud. Maintenance is one repository, reproducible builds, and a 22-check test suite --
+  far cheaper than a server-backed analytics stack.
+}
+
+% ============================================================
+\subsection{Slide 5 --- Impact and Benefits}
+
+\qa{Who are the target users and what does each one gain?}{
+  \textbf{QA teams}: catch latent defects fixed limits miss (100\% recall). \textbf{Engineers}:
+  faster, data-backed drift forecasts instead of manual analysis. \textbf{Inspectors}:
+  explainable verdicts plus printable, signable certificates for auditable acceptance.
+}
+
+\qa{What are the measured impacts behind these claims?}{
+  Reference dataset: \textbf{100\% defect recall}, \textbf{zero escaped defective parts},
+  anomaly detection score \textbf{79\%}, drift batch \textbf{771/29} PASS/REJECT, and
+  best-case $R^2$ \textbf{0.9999} --- all deterministic and all reproduced by the 22/22
+  automated checks.
+}
+
+\qa{How does PRISMA increase trust in machine decisions?}{
+  No black box: every verdict ships with reasons, method votes (Z / IQR / absolute limit),
+  risk score, the drift-vs-safety-slope chart, a 6-step reasoning chain, and a re-auditable
+  certificate. An inspector can verify the decision, not just accept it.
+}
+
+\qa{What is the business model / adoption path?}{
+  Delivery as a turnkey static deployment for test floors (free hosting, no infra), with
+  roadmap items --- data-acquisition GUI, multi-lot forecasting, printed certificate batches,
+  API export --- funded as deployment phases. The cost model makes it attractive for
+  budget-constrained aerospace teams.
+}
+
+\qa{What is the roadmap beyond the hackathon?}{
+  Connect live test-floor data streams, add multi-lot and lot-lot drift baselines, batch
+  certificate printing, and pilot deployment with one ISRO/ISPA partner test bench to
+  re-tune thresholds on real history.
+}
+
+% ============================================================
+\subsection{Slide 6 --- Research and References}
+
+\qa{Which sources did you study, and what did you take from each?}{
+  (1) Semiconductor burn-in + ML data-driven framework --- the LOT-relative failure-modelling
+  idea; (2) early-failure prediction of quantum cascade lasers during accelerated burn-in ---
+  the early-measurements-predict-late-state premise; (3) MIL-STD-883-style electronic burn-in
+  screening --- the ESS procedural context; (4) NASA hybrid-microcircuit burn-in reliability ---
+  aerospace screening requirements; (5) latent and patent failure modelling --- the
+  defect-escape theoretical basis.
+}
+
+\qa{How does your approach differ from those papers?}{
+  The papers model failure with Python toolboxes and historical wafer/test datasets.
+  PRISMA operationalises the same idea as a \textbf{deterministic, explainable, offline, static
+  web product} --- from-scratch in-browser ML, lot-relative 2-of-3 consensus, safety-slope
+  early rejection, and per-component certificates --- needing no infrastructure to run.
+}
+
+\qa{Why is your evaluation data synthetic, and is that valid?}{
+  Real test-floor data is proprietary and unavailable in a hackathon. Seed-42 synthetic data
+  is used so results are \emph{reproducible and verifiable}, and the 22/22 suite pins exact
+  numbers. The algorithms are dataset-agnostic; with the modelling basis from the cited
+  literature, swapping in real data only changes the fitted numbers, not the method.
+}
+
+\qa{Show us the sample UI the team developed.}{
+  The pitch includes a live link \url{https://isro-burnin-detection.vercel.app} and the demo
+  video: login as three roles, statistics board, Module A outlier panel (164/33/3), Module B
+  training and 800-batch forecast, single-prediction early reject, comprehensive pipeline,
+  explainability panel, and certificate download --- all in one interface.
+}
+
+\qa{How does your accuracy compare with the published ML burn-in literature?}{
+  The published work reports classifier/predictor fits on their proprietary data; direct
+  numbers are not transferable. Where comparable, PRISMA's $R^2=0.9999$ (delay), sub-0.1 MAE
+  on most parameters, and 100\% recall on the reference set are strong --- and they are
+  achieved in a zero-infrastructure browser build the papers do not target.
+}
+
+% ============================================================
+\section{Golden Rules for the Window}
+\label{sec:rules}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{No new features} --- they invalidate the verified deterministic numbers.
+  \item \textbf{Never touch} the seed-42 generator or scoring weights without re-running the
+        full suite.
+  \item \textbf{No plaintext credentials} in any submitted artifact.
+  \item \textbf{Stop at 30 minutes} on any build issue; the live deployment already works.
+\end{itemize}
+
+\end{document}

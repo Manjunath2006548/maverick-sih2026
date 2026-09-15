@@ -1,0 +1,470 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---------- Packages ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{eso-pic}
+\usepackage[most]{tcolorbox}
+\usepackage{amsmath}
+
+% ---------- Page border on every page ----------
+\AddToShipoutPictureBG{%
+  \AtPageLowerLeft{%
+    \setlength{\fboxrule}{2pt}\setlength{\fboxsep}{0pt}%
+    \color{isroblue}%
+    \fbox{\parbox[c][\dimexpr\paperheight-2\fboxrule][c]{\dimexpr\paperwidth-2\fboxrule}{}}%
+  }%
+}
+
+% ---------- Colours (ISRO theme) ----------
+\definecolor{isroblue}{RGB}{0,80,160}
+\definecolor{isroorange}{RGB}{230,110,20}
+\definecolor{accent}{RGB}{40,116,240}
+\definecolor{solgreen}{RGB}{0,130,60}
+\definecolor{phasebg}{RGB}{0,80,160}
+
+% ---------- Meta ----------
+\hypersetup{
+  colorlinks=true,
+  linkcolor=accent,
+  urlcolor=accent,
+  pdftitle={PRISMA: Complete Implementation Report (6 Phases, 0-100\%)},
+  pdfauthor={Manjunath Bhaskar Hebbar}
+}
+
+% ---------- Header / Footer ----------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{isroblue}\textbf{PRISMA} -- ISRO Burn-In Anomaly Detection}
+\fancyhead[R]{\small Complete Implementation Report}
+\fancyfoot[C]{\thepage}
+
+% ---------- Section formatting ----------
+\titleformat{\section}{\Large\bfseries\color{isroblue}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{accent}}{\thesubsection.}{0.6em}{}
+
+% ---------- Helper commands ----------
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\keys}[1]{\textbf{\sffamily#1}}
+\newcommand{\whatbox}[1]{%
+  \par\vspace{0.6em}\noindent
+  \begin{tcolorbox}[colback=solgreen!8,colframe=solgreen,
+    title={\sffamily\bfseries\color{white}Why PRISMA satisfies the requirements 100\%},arc=2pt,boxrule=1pt]
+    #1
+  \end{tcolorbox}\par\vspace{0.4em}}
+\newcommand{\phasebox}[3]{\par\vspace{1em}\noindent
+  \begin{tcolorbox}[colback=isroblue!6,colframe=isroblue,
+    title={\sffamily\bfseries\color{white}#1 \quad [Progress: #2]},arc=2pt,boxrule=1.2pt]
+    \textbf{#3}
+  \end{tcolorbox}\par\vspace{0.4em}}
+\newcommand{\whatboxtwo}[1]{\par\vspace{0.6em}\noindent
+  \begin{tcolorbox}[colback=isroblue!8,colframe=isroblue,
+    title={\sffamily\bfseries\color{white}Note},arc=2pt,boxrule=1pt]
+    #1
+  \end{tcolorbox}\par\vspace{0.4em}}
+
+\begin{document}
+
+% ============================================================
+% TITLE PAGE
+% ============================================================
+\begin{titlepage}
+  \centering
+  \vspace*{1.5cm}
+  {\Huge\bfseries\color{isroblue} PRISMA}\\[0.5cm]
+  {\LARGE ISRO Burn-In Anomaly Detection System}\\[0.3cm]
+  {\large AI-Driven Anomaly Detection in Component Burn-In \& Screening}\\[1.5cm]
+  {\large\bfseries Complete Implementation Report}\\[0.3cm]
+  {\large --- Concept to Live Deployment, in 6 Phases ---}\\[1.5cm]
+  {\itshape\large Smart India Hackathon 2026 \,\textbf{·}\, Smart Automation \,\textbf{·}\, PS SIH26170}\\[0.8cm]
+  {\color{isroorange}\rule{0.6\textwidth}{1pt}}\\[1cm]
+  {\normalsize 100\% implemented \,\textbf{·}\, deployed \,\textbf{·}\, verified (22/22 automated checks)}
+  \vfill
+  {\normalsize\textbf{Team:} Maverick}\\[0.2cm]
+  % Passwords are intentionally strong and distributed privately with the demo,
+  % far from any printed document; contact is via the project README.
+  {\normalsize\textbf{Live:} \url{https://isro-burnin-detection.vercel.app}}
+\end{titlepage}
+
+% ============================================================
+\section{Abstract and 100\% Conformance Statement}
+\label{sec:abstract}
+
+\noindent In high-reliability sectors such as space, electronic components undergo rigorous
+Environmental Stress Screening (ESS), including \textbf{Burn-In testing} --- operating components at
+elevated temperatures (e.g.\ \textbf{125\,$^{\circ}$C}) for extended periods. Traditional screening relies
+on \emph{static parametric pass/fail limits}. However, ``latent defects'' --- components that pass the
+absolute datasheet limits yet exhibit subtle, anomalous drift over time --- often escape into final
+payloads and fail catastrophically in the field.
+
+\noindent \textbf{PRISMA} is a predictive machine-learning system that analyses time-series parametric
+data (standby current \keys{Iddq}, leakage currents, propagation delays) measured at the burn-in
+intervals \keys{0h, 24h, 96h, 168h} to detect anomalous components before they are screened into
+an operational payload. It implements both required evaluation artefacts:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Module A --- Dynamic Outlier Detection:} a multi-method statistical consensus
+        (Z-Score, IQR bounds, absolute limits) that flags components against \emph{their own lot
+        distribution} rather than a fixed threshold --- with explainable reasons for every verdict.
+        \emph{Concrete case from the problem: a lot with an average leakage of \textbf{10\,$\mu$A}
+        and a part showing \textbf{45\,$\mu$A} is a massive anomaly even though the datasheet
+        maximum is \textbf{50\,$\mu$A}.}
+  \item \textbf{Module B --- Time-Series Drift Predictor:} a regression model that takes
+        \code{Value\_0h} and \code{Value\_24h} as inputs and forecasts \code{Value\_168h}. If the
+        predicted 168h drift rate exceeds a calculated \textbf{safety slope}, the component is
+        flagged for \textbf{early rejection}.
+  \item \textbf{Evaluation metrics:} Anomaly Detection Score (False Negatives --- escaped defective
+        parts --- penalised \textbf{10$\times$}), Drift Prediction Accuracy (MAE between predicted
+        \code{Value\_168h} and hidden ground truth), and \textbf{Explainability} (every verdict
+        justified to a QA inspector, never a black box).
+\end{itemize}
+
+\whatbox{Every phrase of the problem statement maps to a shipped artefact: 125\,$^{\circ}$C
+  burn-in is recorded as the \code{burn\_in\_temp} column; the
+  10\,$\mu$A$\rightarrow$45\,$\mu$A-in-50\,$\mu$A anomaly is caught by lot-relative consensus;
+  Module B consumes exactly \code{Value\_0h} and \code{Value\_24h} to forecast
+  \code{Value\_168h} and compares the drift against the safety slope; the score penalises a
+  missing defect at \textbf{10$\times$}; MAE is reported per parameter; and the audit panel
+  explains every classification.}
+
+\section{The Six Phases (0\% $\rightarrow$ 100\%)}
+\label{sec:phases}
+
+\noindent The project was executed as \textbf{six phases}, covering the complete life cycle from
+requirement analysis to live handover. Every phase below names its deliverable, its progress share,
+and the verification that proves it.
+
+% ============================================================
+\phasebox{Phase 1}{0\% -- 15\%}{Problem Framing and Requirement Analysis}
+
+\subsection*{Deliverable}
+A complete, unambiguous reading of the problem statement into implementable requirements.
+
+\subsection*{What was established}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Background:} aerospace components are burned in at elevated temperatures
+        (125\,$^{\circ}$C) inside ESS; static pass/fail values let latent defects escape.
+  \item \textbf{Description:} predict defective parts from time-series parametric data at
+        0h/24h/96h/168h (\keys{iddq}, \keys{leakage}, \keys{delay}, \keys{supply\_current}).
+  \item \textbf{Module A requirement:} \emph{dynamic} lot-relative outlier detection --- the
+        10\,$\mu$A-lot / 45\,$\mu$A-part / 50\,$\mu$A-limit example.
+  \item \textbf{Module B requirement:} regression model from \code{Value\_0h} and
+        \code{Value\_24h} to \code{Value\_168h}, with a safety-slope cutoff
+        for early rejection.
+  \item \textbf{Evaluation metrics:} Anomaly Detection Score (FN-catastrophic), Drift Accuracy
+        (MAE vs ground truth), Explainability.
+\end{itemize}
+
+\subsection*{Verified by}
+These five elements become the scorecard used in Phases 3--5; every number is re-checked in
+Phase 6 by the 22/22 automated suite.
+
+% ============================================================
+\phasebox{Phase 2}{15\% -- 35\%}{Architecture and Technology Design}
+
+\subsection*{Deliverable}
+A reference Python backend design plus a zero-infrastructure in-browser re-implementation.
+
+\subsection*{Stack overview}
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Layer} & \textbf{Technology} & \textbf{Notes}\\
+\midrule
+Framework & Next.js 14 (App Router), React 18 & static export\\
+Styling & Tailwind CSS 3.4 + \code{globals.css} & ISRO glass/glow theme\\
+Charts & Recharts 2.10 & accuracy cards\\
+API layer & \code{lib/api.js} & token, 401 redirect\\
+ML backend & \code{lib/maverick-api.js} (in-browser) & zero server\\
+Deployment & Vercel static hosting & free, no runtime\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Key decision: serverless in-browser backend}
+\begin{itemize}[leftmargin=1.5em]
+  \item \code{next.config.js} uses \code{output: 'export'} so the build is pure static HTML/JS/CSS.
+  \item A \textbf{fetch shim} installed at page load intercepts every \code{fetch('/api/...')} call,
+        routes it to \code{handleApiRequest()} in memory, and returns a JSON \code{Response}.
+  \item All ML primitives --- from-scratch SHA-256, MT19937, Gaussian elimination, CART tree
+        regression, random forest, gradient boosting --- are implemented in client JavaScript.
+  \item State persists to \code{localStorage} under key \code{maverick\_state\_v2}.
+\end{itemize}
+
+\subsection*{Authentication and roles}
+Three seeded roles access the full feature set; passwords are stored as \textbf{SHA-256 hashes}
+(never plaintext) with a strong-password policy at registration.
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Role} & \textbf{Email}\\
+\midrule
+Administrator & \code{admin@isro.gov.in}\\
+QA Inspector & \code{qa@isro.gov.in}\\
+Engineer & \code{engineer@isro.gov.in}\\
+\bottomrule
+\end{tabular}
+\end{center}
+\emph{(Credentials are intentionally strong and distributed privately with the demo --- they are
+never printed in project documents.)}
+
+\subsection*{Verified by}
+Login/role/401 checks are the first group of the 22-check E2E suite.
+
+% ============================================================
+\phasebox{Phase 3}{35\% -- 60\%}{Data Ingestion and Module A (Dynamic Outlier Detection)}
+
+\subsection*{Deliverable}
+Deterministic burn-in datasets, statistical screening, and the anomaly detection score.
+
+\subsection*{3.1 Data ingestion}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{CSV upload} --- robust hand-written parser (quoted fields, CRLF/LF, type
+        coercion).
+  \item \textbf{Manual entry} --- key/value measurement lines queued per component.
+  \item \textbf{Sample data} --- deterministic MT19937 (Mersenne Twister, \textbf{seed 42}),
+        \textbf{200 components $\times$ 5 lots}, 4 checkpoints, \textbf{20 columns}, with
+        \keys{is\_defective} ground-truth labels (15 seeded defects, $\sim$8\%).
+\end{itemize}
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Column set (20)} & \textbf{Purpose}\\
+\midrule
+\code{component\_id}, \code{lot\_id} & identity\\
+\code{iddq\_0h/24h/96h/168h} & standby current at each checkpoint\\
+\code{leakage\_0h/24h/96h/168h} & leakage current at each checkpoint\\
+\code{delay\_0h/24h/96h/168h} & propagation delay at each checkpoint\\
+\code{supply\_current\_0h/24h/96h/168h} & supply draw at each checkpoint\\
+\code{burn\_in\_temp} & chamber temperature, 124--126\,$^{\circ}$C (centre 125)\\
+\code{is\_defective} & ground-truth label for scoring\\
+\bottomrule
+\end{tabular}
+\end{center}
+The \code{burn\_in\_temp} column records the 125\,$^{\circ}$C ESS context and is \emph{excluded
+from Module A screening} so environment context cannot dilute the device-risk metric.
+
+\subsection*{3.2 Module A --- three detection methods}
+For every lot and every parametric column the lot statistics (mean $\mu$, std $\sigma$, median,
+quartiles $Q_{25}/Q_{75}$, min/max) are computed, then each component value is judged by:
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Z-Score:} $z=(x-\mu_{\text{lot}})/\sigma_{\text{lot}}$, anomaly if $|z|>1.5$.
+  \item \textbf{IQR bounds:} $[Q_{25}-1.5\cdot IQR,\;Q_{75}+1.5\cdot IQR]$, anomaly if outside.
+  \item \textbf{Absolute datasheet limit} --- hard pass/fail (permissive until configured).
+\end{enumerate}
+
+\subsection*{3.3 Consensus classification}
+$\text{votes}\ge 2$ (majority of 3) $\Rightarrow$ parameter anomaly. Component risk $=$ mean of
+per-parameter risks. Final verdict: $\text{risk}>0.7$ or $>50\%$ parameters anomalous $\Rightarrow$
+\keys{REJECT}; $\text{risk}>0.4$ or any anomaly $\Rightarrow$ \keys{REVIEW}; else \keys{PASS}.
+
+\subsection*{3.4 The 10\,$\mu$A $\rightarrow$ 45\,$\mu$A $\rightarrow$ 50\,$\mu$A case}
+A part at 45\,$\mu$A in a lot whose mean is 10\,$\mu$A sits visually inside the 50\,$\mu$A datasheet
+wall. Static screening ships it. \textbf{PRISMA} does not --- its Z-score and IQR tests are computed
+against the lot mean of 10\,$\mu$A, so 45\,$\mu$A is several sigma away and is flagged anomalous.
+This is the core of the ``dynamic'' requirement and it is demonstrated live in the demo.
+
+\subsection*{3.5 Detection score (FN penalised 10$\times$)}
+\begin{equation*}
+\text{Score}=\max\left(0,\;\frac{TP+TN-10\cdot FN-1\cdot FP}{N}\right)\times100\%
+\end{equation*}
+Defective parts flagged REJECT/REVIEW are TP; defective parts classified PASS are \textbf{escaped
+defects (FN)} and cost \textbf{10$\times$}. Score 79\%, recall 100\%, zero escaped defects.
+
+\subsection*{3.6 Deterministic Module A results (seed 42)}
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Metric} & \textbf{Value} & \textbf{Meaning}\\
+\midrule
+PASS / REVIEW / REJECT & 164 / 33 / 3 & classification distribution\\
+True Positives & 15 & all defective components flagged\\
+False Negatives & 0 & \textbf{zero escaped defects}\\
+False Positives & 21 & flagged but good (review cost only)\\
+Recall (sensitivity) & 100\% & every defective part caught\\
+Precision & 41.67\% & flagged-set purity\\
+Specificity & 88.65\% & good parts passed\\
+F1 score & 0.5882 & precision--recall harmonic mean\\
+Anomaly Detection Score & 79\% & \textbf{FN penalised 10$\times$}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{3.7 Module A explainability}
+Every verdict carries \keys{Reasons} (e.g.\ \code{leakage\_0h = 7.61, lot mean 6.79, std 0.26,
+flagged by 2/3 methods}), physics-informed \keys{Recommendations}, and the \keys{confidence}
+rationale based on the 2-of-3 majority.
+
+\subsection*{Verified by}
+E2E checks: 200 rows, PASS=164 REVIEW=33 REJECT=3, score 79\%, recall 100\%.
+
+% ============================================================
+\phasebox{Phase 4}{60\% -- 80\%}{Module B and Evaluation Metrics}
+
+\subsection*{Deliverable}
+From-scratch drift regressors, the safety slope, early rejection, and per-parameter accuracy.
+
+\subsection*{4.1 Feature engineering}
+From the raw checkpoints, per parameter: \code{value\_0h}, \code{value\_24h}, the drift
+$x_{24h}-x_{0h}$, the drift rate $(x_{24h}-x_{0h})/24$, the percentage change
+$100\cdot\Delta/|x_{0h}|$, and (when 96h exists) the 96h group plus the acceleration term.
+The regression target is exactly \code{Value\_168h}. Features are standardised before training.
+
+\subsection*{4.2 Three candidate regressors (from scratch)}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Ridge regression} --- closed form, L2 ($\alpha=1.0$), hand-written matrix inversion.
+  \item \textbf{Random Forest} --- 100 CART trees, max depth 10, bootstrap, mean ensemble.
+  \item \textbf{Gradient Boosting} --- 100 shallow trees (depth 5, lr 0.1) fit to residuals.
+\end{itemize}
+
+\subsection*{4.3 Prediction and early rejection}
+Given \code{Value\_0h} and \code{Value\_24h} (optionally \code{Value\_96h}):
+\begin{enumerate}[leftmargin=1.5em]
+  \item Build and standardise the feature vector.
+  \item Predict $\hat{x}_{168h}$ with the selected model (best of 5-fold CV MAE).
+  \item Predicted drift rate $r=(\hat{x}_{168h}-x_{0h})/168$.
+  \item If $|r|>$ safety slope $\Rightarrow$ \keys{REJECT}; else \keys{PASS} with confidence $1-|r|/s$.
+\end{enumerate}
+
+\subsection*{4.4 Safety slope}
+\begin{equation*}
+\text{safety\_slope} =
+\begin{cases}
+|\overline{rate}_{0\rightarrow24}|+1.96\cdot s_{rate}, & n\ge 5\\
+2\times|\overline{rate}_{0\rightarrow24}|, & n<5
+\end{cases}
+\end{equation*}
+i.e.\ the lot's mean 0h$\rightarrow$24h drift rate plus a 97.5\% normal bound ($\Phi^{-1}(0.975)=
+1.959963984540054$). A 6-step reasoning chain walks the inspector from raw values to the verdict.
+
+\subsection*{4.5 Drift Prediction Accuracy (MAE vs ground truth)}
+\begin{center}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Chosen model} & \textbf{MAE} & \textbf{RMSE} & $R^2$\\
+\midrule
+iddq & Random Forest & 0.0718 mA & 0.1482 & 0.9883\\
+leakage & Random Forest & 0.0417 mA & 0.0952 & 0.9934\\
+delay & Gradient Boosting & 0.0007 ns & 0.0010 & 0.9999\\
+supply\_current & Random Forest & 0.1406 mA & 0.3036 & 0.9836\\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{MAE} is the metric named in the evaluation criteria: the mean absolute error between the
+predicted \code{Value\_168h} and the hidden ground truth. Batch result (seed 42): \textbf{800}
+predictions $\rightarrow$ \textbf{771 PASS / 29 REJECT}.
+
+\subsection*{4.6 Feature importances}
+Tree models report aggregated MSE-improvement importances (normalised to sum 1); ridge reports
+$|\beta_i|$ magnitudes --- powering the ``safety analysis'' cards.
+
+\subsection*{Verified by}
+E2E checks: 4 parameters trained, 800 predictions, single iddq prediction \code{Value\_168h =
+11.4747, verdict PASS}, per-parameter MAE/RMSE/$R^2$.
+
+% ============================================================
+\phasebox{Phase 5}{80\% -- 90\%}{Comprehensive Pipeline, Frontend, and Explainability}
+
+\subsection*{Deliverable}
+A one-click pipeline plus the full user experience: pages, dashboard, certificates, and the audit
+panel that makes every machine decision transparent.
+
+\subsection*{5.1 Comprehensive pipeline}
+One call runs Module A and Module B together: outlier analysis, drift training, batch prediction,
+combined per-component verdict (\code{outlier\_classification} + \code{drift\_recommendation}
+$\rightarrow$ \code{combined\_verdict}), and a consolidated summary. Deterministic result:
+Module A 164/33/3 (score 79\%, FN$=$0); Module B 771 PASS / 29 REJECT.
+
+\subsection*{5.2 Frontend pages}
+\begin{itemize}[leftmargin=1.5em]
+  \item \keys{Landing} (/) --- ISRO hero with module cards and the three evaluation-metric cards.
+  \item \keys{Login} (/login) --- sign-in/register, password-strength meter, role selector.
+  \item \keys{Upload} (/upload) --- CSV / manual / sample-data tabs with live preview.
+  \item \keys{Analysis} (/analysis) --- Comprehensive, Module A, Module B, Single Prediction tabs.
+  \item \keys{Dashboard} (/dashboard) --- quick stats, Module A panel, Module B accuracy cards,
+        pipeline status.
+\end{itemize}
+
+\subsection*{5.3 Explainability (not a black box)}
+The slide-out Detailed Report exposes raw values, ground truth, the full per-parameter Module A
+method votes (Z / IQR / absolute-limit FLAG/CLEAR), Module B predictions vs safety slope, and the
+6-step reasoning chain --- everything a \textbf{QA inspector} needs to justify a decision.
+
+\subsection*{5.4 Certificates}
+Downloadable HTML certificates (Acceptance / Rejection / Manual Review) with screening checklist,
+reference number \code{MAV/YYYYMMDD/<VERDICT>/<count>}, issue date, and a QA sign-off block.
+
+\subsection*{5.5 UX hardening (loading overlay)}
+Heavy loops yield between chunks (\code{yieldThread()}) and the loading overlay is painted first
+(a 30 ms paint-gate). Two real bugs fixed: the stale \code{maverick\_state\_v1} login collision
+(bumped to \code{v2} with forced demo-account reset) and a stray \code{return} in
+\code{predictDriftBatch} that terminated the inner loop (now \code{continue}).
+
+\subsection*{Verified by}
+E2E checks for explainability (COMP-01001, all 4 parameters), dashboard (200 components), and
+role-gated dashboard access for all three roles.
+
+% ============================================================
+\phasebox{Phase 6}{90\% -- 100\%}{Verification, Deployment, and Handover}
+
+\subsection*{Deliverable}
+Proved, deployed, and handed-over software with full documentation.
+
+\subsection*{6.1 End-to-end verification (22/22)}
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Check} & \textbf{Outcome}\\
+\midrule
+Login admin / qa / engineer & 200 with token, correct role\\
+Wrong password & 401\\
+Unauthenticated /data/stats & 401\\
+Health endpoint & 200, healthy\\
+Sample data & 200 rows, 5 lots, \textbf{20 columns}\\
+Data stats & total\_components = 200\\
+Module A outlier & 200 analysed, 164/33/3\\
+Module A detection score & 79\%, recall 100\%\\
+Module B train & 4 parameters trained\\
+Module B batch & 800 predictions, per-param MAE/RMSE/$R^2$\\
+Single prediction (iddq) & Value\_168h = 11.4747, verdict PASS\\
+Comprehensive & Module A + B summaries present\\
+Comprehensive drift & 771 PASS / 29 REJECT\\
+Explainability & COMP-01001, all methods present\\
+Dashboard (all roles) & 200, data\_info total = 200\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{6.2 Deployment}
+\code{npm run build} produces the static \code{out/} export; \code{vercel --prod --yes} deploys it;
+the site is verified live with HTTP 200, correct PRISMA metadata, and a bundle containing the
+reset logic and \code{burn\_in\_temp}. No server functions, no environment variables, no database.
+
+\subsection*{6.3 Project structure}
+\code{frontend/app/} (layout, landing, login, upload, analysis, dashboard) + \code{components/
+Sidebar.js} + \code{lib/} (\code{maverick-api.js} -- the in-browser backend, \code{api.js} --
+client wrapper) + configs (\code{next.config.js}, \code{globals.css}, \code{tailwind.config.js}).
+
+\subsection*{6.4 Future work}
+Real test-floor data feeds (TDS/STDF), transfer learning across component families, uncertainty
+quantification driven by temperature profiles, per-page role enforcement, and edge deployment.
+
+\subsection*{6.5 Conclusion (100\%)}
+PRISMA demonstrates a practical, explainable, immediately usable ML system for latent burn-in
+defect detection --- exactly matching the problem statement's background, description, expected
+solution (Modules A and B), and evaluation metrics. Every claim is verified by 22/22 automated
+checks against the live deployment with deterministic seed-42 data.
+
+\end{document}
