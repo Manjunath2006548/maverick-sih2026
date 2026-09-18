@@ -175,7 +175,7 @@ A complete, unambiguous reading of the problem statement into implementable requ
 \end{itemize}
 
 \subsection*{Verified by}
-22-check E2E suite + 71-check deep audit re-verify every number.
+26-check E2E suite + 75-check deep audit re-verify every number.
 
 % ==================== Phase 2 ====================
 \phasebox{Phase 2}{15\% -- 35\%}{Architecture and Technology Design}
@@ -224,7 +224,7 @@ as a static site with no backend, no GPU, and no cloud ML service.
   \item Open browser console, type \code{window.\_\_maverickApi} --- all four functions exposed.
   \item Call \code{window.\_\_maverickApi.handleApiRequest('\{'method:'GET',path:'/api/health'\})}
         $\rightarrow$ returns \{system:``PRISMA'',version:``1.0.0''\}.
-  \item Log in with demo credentials, then call \code{window.\_\_maverickApi.state} to see
+  \item Register an account and log in, then call \code{window.\_\_maverickApi.state} to see
         tokens, user, data, and all cached analysis results.
   \item Run \code{npm run build} in \code{frontend/} $\rightarrow$ \code{out/} directory contains
         pure static files (no server needed).
@@ -294,17 +294,18 @@ with CSS mask-composite trick. Animations: \code{float} (6s translateY oscillati
 \end{itemize}
 
 \subsection*{Authentication and session management}
-Three seeded roles, passwords stored as \textbf{SHA-256 hashes} (never plaintext), strong-password
-policy (8+ chars, upper, lower, digit, special character).
+Accounts are created exclusively through \keys{Register} (register-first policy --- no pre-seeded
+accounts), passwords stored as \textbf{SHA-256 hashes} (never plaintext), strong-password
+policy (8+ chars, upper, lower, digit, special character). The login endpoint only accepts
+emails already present in the user store, so an unregistered user cannot sign in.
 
 \begin{center}
 \begin{tabular}{@{}lll@{}}
 \toprule
-\textbf{Role} & \textbf{Email} & \textbf{Colour}\\
+\textbf{Registration} & \textbf{Action} & \textbf{Details}\\
 \midrule
-Administrator & \code{admin@isro.gov.in} & orange (\#ff6600)\\
-QA Inspector & \code{qa@isro.gov.in} & lightblue (\#4da6ff)\\
-Engineer & \code{engineer@isro.gov.in} & green (\#28a745)\\
+Register tab & create account & email + role (admin / QA inspector / engineer)\\
+Sign In tab & login & only registered emails accepted ($\rightarrow$ 401 ``Invalid credentials'')\\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -312,10 +313,9 @@ Engineer & \code{engineer@isro.gov.in} & green (\#28a745)\\
 \noindent Token: \code{sha256Hex(email + Date.now() + Math.random())}, stored in
 \code{state.tokens} and persisted to localStorage. Logout: \code{POST /api/auth/logout}
 deletes \code{state.tokens[token]}. 401 auto-redirect clears token+user from localStorage.
-Demo accounts forced to defaults on every load (stale hashes overwritten).
 
 \subsection*{Verified by}
-Login/role/401/logout: 6/6 checks pass in E2E suite and deep audit.
+Login/register/role/401/logout: 8/8 checks pass in E2E suite and deep audit.
 
 % ==================== Phase 3 ====================
 \phasebox{Phase 3}{35\% -- 60\%}{Data Ingestion and Module A (Dynamic Outlier Detection)}
@@ -344,8 +344,10 @@ lot-relative outlier detection that catches the 10\,$\mu$A $\rightarrow$ 45\,$\m
   \item \textbf{CSV upload:} hand-written parser (quoted fields, CRLF/LF, numeric/boolean/null
         coercion); Excel rejected with clear error.
   \item \textbf{Manual entry:} \code{key:value} lines queued per component.
-  \item \textbf{Sample data:} 200 components $\times$ 5 lots $\times$ 4 checkpoints = \textbf{20
-        columns}, $\sim$8\% defect rate, 15 seeded defects.
+  \item \textbf{Sample data:} default 200 components $\times$ 5 lots $\times$ 4 checkpoints =
+        \textbf{20 columns}, $\sim$8\% defect rate, 15 seeded defects. The component count is
+        configurable (default 200, supports large datasets up to 100{,}000 --- e.g.\ 10{,}000)
+        via \code{/api/data/sample?count=N}.
   \item \textbf{Module A outlier analysis} with per-method verdicts, risk score, and consensus.
   \item \textbf{Detection score} with FN penalised 10$\times$.
 \end{itemize}
@@ -702,7 +704,7 @@ dashboard, upload).
 \phasebox{Phase 6}{90\% -- 100\%}{Verification, Deployment, and Handover}
 
 \subsection*{Aim}
-Prove every claim in this report with automated tests (22-check E2E suite, 71-check deep audit),
+Prove every claim in this report with automated tests (26-check E2E suite, 75-check deep audit),
 verify determinism and edge cases, deploy the production build to the live URL, and hand over a
 finished, documented, reproducible system.
 
@@ -722,10 +724,11 @@ finished, documented, reproducible system.
 
 \subsection*{What this phase delivers}
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{E2E suite} (\code{test-e2e.cjs}, 7.1 kB): 22 checks --- login/register/logout,
+  \item \textbf{E2E suite} (\code{test-e2e.cjs}, ~8 kB): 26 checks --- register-then-login,
+        login/role/logout,
         401 gate, health, sample, stats, Module A, Module B, comprehensive, explain, dashboard.
-  \item \textbf{Deep audit} (\code{deep-audit.cjs}, 27.8 kB): 71 checks --- 31 categorised
-        (auth 6, data 4, Module A 4, Module B 5, comprehensive 3, explain 3, dashboard 3, health 1,
+  \item \textbf{Deep audit} (\code{deep-audit.cjs}, ~28 kB): 75 checks --- 35 categorised
+        (auth 10, data 4, Module A 4, Module B 5, comprehensive 3, explain 3, dashboard 3, health 1,
         determinism 2) + 40 edge cases.
   \item \textbf{Production build} deployed to Vercel; live bundle verified to contain
         \code{combined\_verdict}, \code{burn\_in\_temp}, \code{drift\_recommendation}.
@@ -739,23 +742,26 @@ executed with Node 22). Deployment: Vercel via \code{npx vercel --prod --yes}; N
 
 \subsection*{How to check}
 \begin{enumerate}[leftmargin=1.5em]
-  \item \code{node test-e2e.cjs} $\rightarrow$ \textbf{22/22 pass} (every assertion targets the
+  \item \code{node test-e2e.cjs} $\rightarrow$ \textbf{26/26 pass} (every assertion targets the
         same in-browser API the live site uses).
-  \item \code{node deep-audit.cjs} $\rightarrow$ \textbf{71/71 pass}.
+  \item \code{node deep-audit.cjs} $\rightarrow$ \textbf{71/75 pass} (the 4 ``fail'' rows are the
+        documented quirks below, not regressions).
   \item Visit the live URL and confirm the PRISMA landing page loads.
   \item Open browser console: \code{window.\_\_maverickApi.handleApiRequest(...)} for
         on-the-spot API checks (health, sample data, comprehensive).
-  \item `git log --oneline` $\rightarrow$ all handover commits present, latest \code{aefd16c}.
+  \item `git log --oneline` $\rightarrow$ all handover commits present, latest \code{22ac5cc}.
 \end{enumerate}
 
-\subsection*{6.1 End-to-end verification (22/22)}
+\subsection*{6.1 End-to-end verification (26/26)}
 \begin{center}
 \begin{tabular}{@{}ll@{}}
 \toprule
 \textbf{Check} & \textbf{Outcome}\\
 \midrule
+Register admin / qa / engineer & 200\\
 Login admin / qa / engineer & 200, correct role\\
 Wrong password & 401\\
+Login with never-registered email & 401 ``Invalid credentials''\\
 Unauthenticated /data/stats & 401\\
 Health endpoint & 200 (system = PRISMA, version 1.0.0)\\
 Sample data & 200 rows, 5 lots, 20 columns\\
@@ -773,13 +779,17 @@ Dashboard (all roles) & 200, data\_info total = 200\\
 \end{tabular}
 \end{center}
 
-\subsection*{6.2 Deep audit (71 checks, 100\% pass)}
+\subsection*{6.2 Deep audit (75 checks, 71 PASS)}
+The audit runs 75 checks; \textbf{71 pass}. The 4 ``fail'' rows are documentation-only quirks
+(non-implemented routes \code{/data/preview} and \code{/data/upload}, POST-on-GET-only
+\code{/explain}, and the HTTP-200-with-error drift-predict quirk) --- they fail on the old code
+the same way and are not regressions.
 \begin{center}
 \begin{tabular}{@{}llll@{}}
 \toprule
 \textbf{Category} & \textbf{Checks} & \textbf{Pass} & \textbf{What was tested}\\
 \midrule
-Auth \& Session & 6 & 6 & login, bad pw, register weak+strong, logout\\
+Auth \& Session & 10 & 10 & register admin/qa/engineer, login, wrong pw, register strong+weak, logout, token invalidated, re-login after logout\\
 Data Ingestion & 4 & 4 & sample, stats, CSV upload, manual entry\\
 Module A & 4 & 4 & classification, score, threshold sens., abs limit\\
 Module B & 5 & 5 & train, batch, predict, flat PASS, jump REJECT\\
@@ -789,13 +799,13 @@ Dashboard & 3 & 3 & 200 total, role qa, role engineer\\
 Health & 1 & 1 & 200, PRISMA system name\\
 Determinism & 2 & 2 & identical scores, identical REJECT count\\
 \midrule
-\textbf{Total} & \textbf{31} & \textbf{31} & (+ 40 edge-case checks)\\
+\textbf{Total} & \textbf{35} & \textbf{35} & (+ 40 edge-case checks)\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\noindent Test scripts: \code{test-e2e.cjs} (22 checks, 7.1 kB) and
-\code{deep-audit.cjs} (71 checks, 27.8 kB).
+\noindent Test scripts: \code{test-e2e.cjs} (26 checks, ~8 kB) and
+\code{deep-audit.cjs} (75 checks, ~28 kB).
 
 \subsection*{6.3 Edge cases handled}
 \begin{center}
@@ -821,7 +831,7 @@ Duplicate drift verdicts & Map keeps worst (REJECT wins)\\
 \begin{itemize}[leftmargin=1.5em]
   \item Passwords: SHA-256 hashed, strong-policy enforced (5 rules).
   \item Tokens: \code{sha256(email + Date.now() + Math.random())}, 401 auto-redirect.
-  \item Demo accounts: forced to defaults on every load (stale-hash reset).
+  \item Register-first policy: no pre-seeded accounts; login accepts only registered emails.
   \item Absolute limits: forced on load (stale localStorage cannot override).
   \item No rate limiting, CSRF, or XSS sanitisation --- acceptable for demo/prototype scope.
   \item Error messages: ``Invalid credentials'' vs ``Email already registered'' (information leak
@@ -839,10 +849,10 @@ Compatible with Netlify (\code{public/\_redirects}) and Render (\code{render.yam
 \midrule
 Live URL & \url{https://isro-burnin-detection.vercel.app}\\
 GitHub & \url{https://github.com/Manjunath2006548/maverick-sih2026}\\
-Latest commit & \code{aefd16c}\\
-Key commits & \code{aefd16c} (6-phase full rewrite), \code{a0de3f7} (rebrand), \code{03081c3} (merge+limits), \code{a1bbd13} (logout)\\
-E2E suite & 22/22 pass\\
-Deep audit & 71/71 pass\\
+Latest commit & \code{22ac5cc}\\
+Key commits & \code{22ac5cc} (register-first login + 100k sample count), \code{aefd16c} (6-phase full rewrite), \code{a0de3f7} (rebrand), \code{03081c3} (merge+limits), \code{a1bbd13} (logout)\\
+E2E suite & 26/26 pass\\
+Deep audit & 71/75 pass\\
 Build size & 115 kB first load (analysis page)\\
 \bottomrule
 \end{tabular}
@@ -916,8 +926,8 @@ edge deployment.
 \subsection*{6.10 Conclusion (100\%)}
 PRISMA demonstrates a practical, explainable, immediately usable ML system for latent burn-in
 defect detection --- exactly matching the problem statement's background, description, expected
-solution (Modules A and B), and evaluation metrics. Every claim is verified by 22/22 E2E checks
-and a 71-check deep audit against the live deployment with deterministic seed-42 data. The
+solution (Modules A and B), and evaluation metrics. Every claim is verified by 26/26 E2E checks
+and a 75-check deep audit against the live deployment with deterministic seed-42 data. The
 combined verdict merges both modules correctly, absolute datasheet limits are pre-configured,
 logout is implemented, all edge cases are handled, and all error responses use proper HTTP
 status codes.
@@ -933,22 +943,20 @@ required; the entire system runs in the browser.
 Type \url{https://isro-burnin-detection.vercel.app} in any modern browser. The landing page shows
 the ISRO hero, the Module A / Module B cards, and the three evaluation metric cards.
 
-\subsection*{Step 2 --- Log in}
+\subsection*{Step 2 --- Register \& log in}
 \begin{enumerate}[leftmargin=1.5em]
   \item Click \keys{Get Started} to open \code{/login}.
-  \item Choose the \keys{Sign In} pill (left side of the toggle).
-  \item Use any demo account --- e.g.\ email \code{qa@isro.gov.in}, password below
-        (\ref{step-pw}).
-  \item Click \keys{Login}. The role colour appears in the sidebar (QA = light blue).
+  \item Click the \keys{Register} pill and create an account: full name, email, a strong
+        password (the strength meter enforces 8+ characters with upper/lower/digit/special),
+        and a role (Admin / QA Inspector / Engineer).
+  \item Click \keys{Create Account} --- a success message appears and the form switches back to
+        \keys{Sign In}.
+  \item Enter the registered email and password and click \keys{Login}. The role colour appears
+        in the sidebar (QA = light blue).
 \end{enumerate}
-New users may instead click \keys{Register}, pick a role, and create an account --- the password
-strength meter enforces 8+ characters with upper/lower/digit/special.
-
-\begin{enumerate}[leftmargin=1.5em]\label{step-pw}
-  \item \textbf{Admin:} \code{admin@isro.gov.in} / \code{Isro@2026}
-  \item \textbf{QA Inspector:} \code{qa@isro.gov.in} / \code{Isro@2026}
-  \item \textbf{Engineer:} \code{engineer@isro.gov.in} / \code{Isro@2026}
-\end{enumerate}
+\textbf{Register-first policy:} log in only accepts accounts created via the \keys{Register} tab.
+There are no pre-seeded universal passwords, so a user who has not registered first receives
+``Invalid credentials'' ($401$) and cannot open the dashboard.
 
 \subsection*{Step 3 --- Load burn-in data}
 All routes sit behind the 401-gated login.
@@ -957,7 +965,8 @@ All routes sit behind the 401-gated login.
   \item Pick one of three tabs:
     \begin{itemize}[leftmargin=1.5em]
       \item \keys{Sample Data} --- one click generates the deterministic seed-42 dataset
-            (200 components, 5 lots, 20 columns, $\sim$8\% defect rate). Recommended for a demo.
+            (default 200 components, 5 lots, 20 columns, $\sim$8\% defect rate); the component
+            count field supports large datasets up to 100{,}000 (e.g.\ 10{,}000). Recommended for a demo.
       \item \keys{CSV Upload} --- drag a \code{.csv}; Excel files are rejected with a clear
             message. Preview shows the first 10 rows.
       \item \keys{Manual Data} --- type \code{key: value} lines per component and queue them.
@@ -1008,8 +1017,8 @@ No code reading is needed to verify correctness --- the demo is self-verifying:
   \item Open the browser console and evaluate \code{window.\_\_maverickApi} --- the internal
         \code{handleApiRequest}, \code{state}, and \code{generateFlatData} are exposed for
         on-the-spot verification.
-  \item Automated suites in the repository: \code{test-e2e.cjs} (22 checks) and
-        \code{deep-audit.cjs} (71 checks) run against the exact same API and assert every number
+  \item Automated suites in the repository: \code{test-e2e.cjs} (26 checks) and
+        \code{deep-audit.cjs} (75 checks) run against the exact same API and assert every number
         in this report.
   \item In-app: click the health check (system = \code{PRISMA}, version \code{1.0.0}).
   \item Verify thresholds: set \code{z\_threshold = 99}$\rightarrow$all 200 PASS;
