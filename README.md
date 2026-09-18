@@ -68,20 +68,16 @@ npm install
 npm run dev
 ```
 
-## Demo Accounts
+## Accounts
 
-| Role | Email | Password |
-|------|-------|----------|
-| Administrator | admin@isro.gov.in | Admin@123! |
-| QA Inspector | qa@isro.gov.in | Qa@123! |
-| Engineer | engineer@isro.gov.in | Eng@123! |
+Accounts are created through the **Register** flow on the login page. A registered account is required before you can sign in (no pre-seeded accounts; register first, then log in).
 
 > New registrations require a strong password: minimum 8 characters with uppercase, lowercase, number, and special character.
 
 ## Using The System
 
-1. **Login** with a demo account
-2. **Data Ingress** → Generate sample data (or upload a CSV/Excel file of burn-in measurements)
+1. **Register** an account (Register tab on the login page), then **Login** with it
+2. **Data Ingress** → Generate sample data (optionally choose the number of components, up to 100,000) or upload a CSV/Excel file of burn-in measurements
 3. **Analysis Center** → Run analysis:
    - **Module A**: Dynamic Outlier Detection
    - **Module B**: Batch drift prediction to get MAE/R2 metrics

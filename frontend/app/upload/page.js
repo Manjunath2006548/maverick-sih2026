@@ -17,6 +17,7 @@ export default function UploadPage() {
   const [manualText, setManualText] = useState('');
   const [manualEntries, setManualEntries] = useState([]);
   const [activeTab, setActiveTab] = useState('csv');
+  const [sampleCount, setSampleCount] = useState(200);
   const router = useRouter();
 
   useEffect(() => {
@@ -59,7 +60,7 @@ export default function UploadPage() {
     setMessage('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/data/sample', {
+      const res = await fetch(`/api/data/sample?count=${sampleCount}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -297,12 +298,27 @@ export default function UploadPage() {
               <h3 className="text-lg font-bold text-white mb-4">Generate Sample Data</h3>
               <p className="text-sm text-gray-400 mb-6">
                 Generate realistic synthetic burn-in data with known defective components for testing.
-                Includes 200 components across 5 lots with ~8% defect rate.
+                Choose how many components to generate (up to 100,000) across 5 lots with ~8% defect rate.
               </p>
+
+              <div className="mb-6">
+                <label className="block text-xs text-gray-400 mb-1.5">Number of Components</label>
+                <input
+                  type="number"
+                  value={sampleCount}
+                  min="1"
+                  max="100000"
+                  step="100"
+                  onChange={(e) => setSampleCount(parseInt(e.target.value, 10) || 200)}
+                  className="w-full max-w-xs px-4 py-2.5 bg-isro-dark border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-isro-lightblue/50"
+                  placeholder="200"
+                />
+                <p className="text-[11px] text-gray-600 mt-1">200 default · supports large datasets (e.g., 10,000 components)</p>
+              </div>
 
               <div className="grid grid-cols-3 gap-4 mb-6">
                 {[
-                  { label: 'Components', value: '200', desc: 'Total parts in dataset' },
+                  { label: 'Components', value: sampleCount.toLocaleString(), desc: 'Total parts in dataset' },
                   { label: 'Lots', value: '5', desc: 'Distinct manufacturing lots' },
                   { label: 'Defect Rate', value: '~8%', desc: 'Known defective parts' },
                 ].map((item, i) => (

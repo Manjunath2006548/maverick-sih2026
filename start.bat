@@ -65,10 +65,8 @@ echo   Backend:  http://localhost:8001
 echo   Frontend: http://localhost:3000
 echo   API Docs: http://localhost:8001/docs
 echo.
-echo   Demo Accounts (type these manually on login):
-echo     admin@isro.gov.in / Admin@123!
-echo     qa@isro.gov.in / Qa@123!
-echo     engineer@isro.gov.in / Eng@123!
+echo   Login: users must Register first (Register tab), then Sign In
+echo   Sample data: component count selectable up to 100,000
 echo.
 echo ============================================
 

@@ -287,25 +287,8 @@ function numericColumns(records, columns) {
 let state = null;
 
 function defaultState() {
-  const demoBroken = Object.fromEntries(['admin@isro.gov.in', 'qa@isro.gov.in', 'engineer@isro.gov.in'].map(() => []));
   return {
-    users: {
-      'admin@isro.gov.in': {
-        password: sha256Hex('Admin@123!'),
-        name: 'Admin User',
-        role: 'admin',
-      },
-      'qa@isro.gov.in': {
-        password: sha256Hex('Qa@123!'),
-        name: 'QA Inspector',
-        role: 'qa_inspector',
-      },
-      'engineer@isro.gov.in': {
-        password: sha256Hex('Eng@123!'),
-        name: 'Engineer',
-        role: 'engineer',
-      },
-    },
+    users: {},
     tokens: {},
     dataset: null,
     filename: null,
@@ -345,10 +328,6 @@ function loadState() {
     const parsed = JSON.parse(raw);
     const base = defaultState();
     const mergedUsers = { ...base.users, ...(parsed.users || {}) };
-    const demoAccounts = ['admin@isro.gov.in', 'qa@isro.gov.in', 'engineer@isro.gov.in'];
-    demoAccounts.forEach((email) => {
-      mergedUsers[email] = base.users[email];
-    });
     const mergedCfg = { ...base.detectorConfig, ...(parsed.detectorConfig || {}) };
     mergedCfg.absolute_limits = base.detectorConfig.absolute_limits;
     return { ...base, ...parsed, users: mergedUsers, detectorConfig: mergedCfg, tokens: parsed.tokens || {} };
@@ -1623,7 +1602,12 @@ export async function handleApiRequest(url, init = {}) {
   if (method === 'GET' && route === '/data/sample') {
     const err = await requireAuth();
     if (err) return err;
-    const records = generateFlatData(200, 5, 0.08);
+    let count = 200;
+    if (query) {
+      const parsed = parseInt(query.split('=')[1], 10);
+      if (!isNaN(parsed) && parsed > 0) count = Math.min(Math.max(parsed, 1), 100000);
+    }
+    const records = generateFlatData(count, 5, 0.08);
     const columns = Object.keys(records[0]);
     state.dataset = { records, columns };
     state.filename = 'sample_burn_in_data.csv';

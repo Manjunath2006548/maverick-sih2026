@@ -280,7 +280,7 @@ export default function LoginPage() {
           {isLogin && (
             <div className="mt-5 pt-5 border-t border-white/5">
               <p className="text-[10px] text-gray-500 text-center">
-                Contact your system administrator for account credentials
+                No account? Use the Register tab above to create one first, then sign in.
               </p>
             </div>
           )}

@@ -31,24 +31,8 @@ app.add_middleware(
 security = HTTPBearer()
 
 # In-memory stores
-USERS_DB = {
-    "admin@isro.gov.in": {
-        "password": hashlib.sha256("Admin@123!".encode()).hexdigest(),
-        "name": "Admin User",
-        "role": "admin"
-    },
-    "qa@isro.gov.in": {
-        "password": hashlib.sha256("Qa@123!".encode()).hexdigest(),
-        "name": "QA Inspector",
-        "role": "qa_inspector"
-    },
-    "engineer@isro.gov.in": {
-        "password": hashlib.sha256("Eng@123!".encode()).hexdigest(),
-        "name": "Engineer",
-        "role": "engineer"
-    }
-}
-
+# Users are created exclusively through /api/auth/register (no seeded demo accounts).
+USERS_DB = {}
 TOKENS_DB = {}
 detector = DynamicOutlierDetector()
 predictor = TimeSeriesDriftPredictor()
@@ -211,8 +195,9 @@ async def upload_manual(data: List[ManualDataEntry], user=Depends(verify_token))
 
 
 @app.get("/api/data/sample")
-async def get_sample_data(user=Depends(verify_token)):
-    df = generate_flat_data(n_components=200, n_lots=5, defect_rate=0.08)
+async def get_sample_data(count: int = 200, user=Depends(verify_token)):
+    count = max(1, min(count, 100000))
+    df = generate_flat_data(n_components=count, n_lots=5, defect_rate=0.08)
     analysis_cache['uploaded_data'] = df
     
     return {
