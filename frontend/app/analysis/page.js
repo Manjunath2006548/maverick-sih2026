@@ -814,7 +814,7 @@ function DriftResults({ data, onViewExplain }) {
         {[
           { label: 'Total Predictions', value: data.total_predictions || (data.results || []).length, color: 'white', cls: null },
           { label: 'PASS', value: passCount, color: 'green', cls: 'PASS' },
-          { label: 'FAIL', value: failCount, color: 'red', cls: 'FAIL' },
+          { label: 'FAIL', value: failCount, color: 'red', cls: 'REJECT' },
         ].map((stat) => (
           stat.cls ? (
             <button
