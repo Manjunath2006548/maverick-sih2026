@@ -412,6 +412,8 @@ function defaultState() {
     training_metrics: {},
     safety_slopes: {},
     feature_importances: {},
+    trained_signature: null,
+    predicted_signature: null,
     detectorConfig: {
       z_threshold: 1.5,
       iqr_multiplier: 1.5,
@@ -891,31 +893,40 @@ function linearPredict(model, x) {
 
 function buildTree(X, y, indices, depth, maxDepth, rngState, featureSubset) {
   const n = indices.length;
-  const sumY = indices.reduce((s, i) => s + y[i], 0);
-  const meanY = sumY / n;
-  const mse = n === 0 ? 0 : indices.reduce((s, i) => s + (y[i] - meanY) ** 2, 0);
+  if (n === 0) return { value: 0, size: 0 };
 
   if (depth >= maxDepth || n < 2) {
-    return { value: meanY, size: n };
+    let sumY = 0;
+    for (let i = 0; i < n; i++) sumY += y[indices[i]];
+    return { value: sumY / n, size: n };
   }
 
   const d = X[0].length;
   const featPool = featureSubset ? featureSubset : Array.from({ length: d }, (_, i) => i);
+  const nFeat = featPool.length;
+  let sumY = 0;
+  let totalSq = 0;
+  for (let i = 0; i < n; i++) {
+    const yi = y[indices[i]];
+    sumY += yi;
+    totalSq += yi * yi;
+  }
+  const meanY = sumY / n;
   let best = null;
 
-  for (const f of featPool) {
+  for (let fi = 0; fi < nFeat; fi++) {
+    const f = featPool[fi];
     const o = indices.slice().sort((a, b) => X[a][f] - X[b][f]);
     let leftSum = 0;
     let leftSq = 0;
     let leftN = 0;
-    const totalSq = indices.reduce((s, i) => s + y[i] ** 2, 0);
     for (let k = 0; k < n - 1; k++) {
       const yi = y[o[k]];
       leftSum += yi;
       leftSq += yi * yi;
       leftN++;
-      const rightN = n - leftN;
       if (X[o[k]][f] === X[o[k + 1]][f]) continue;
+      const rightN = n - leftN;
       const rightSum = sumY - leftSum;
       const rightSq = totalSq - leftSq;
       const loss = (leftSq - leftSum * leftSum / leftN) + (rightSq - rightSum * rightSum / rightN);
@@ -931,10 +942,17 @@ function buildTree(X, y, indices, depth, maxDepth, rngState, featureSubset) {
 
   const left = [];
   const right = [];
-  for (const i of indices) {
-    if (X[i][best.f] <= best.thresh) left.push(i); else right.push(i);
+  for (let i = 0; i < n; i++) {
+    const idx = indices[i];
+    if (X[idx][best.f] <= best.thresh) left.push(idx); else right.push(idx);
   }
   if (!left.length || !right.length) return { value: meanY, size: n };
+
+  let mse = 0;
+  for (let i = 0; i < n; i++) {
+    const yi = y[indices[i]];
+    mse += (yi - meanY) * (yi - meanY);
+  }
 
   const node = {
     f: best.f,
@@ -1059,10 +1077,55 @@ function resetDriftModels() {
   driftModels = {};
 }
 
+function invalidateDriftCache() {
+  resetDriftModels();
+  state.trained_signature = null;
+  state.predicted_signature = null;
+  state.drift_results = null;
+  state.drift_accuracy = {};
+  state.trained_parameters = [];
+  state.training_metrics = {};
+  state.safety_slopes = {};
+  state.feature_importances = {};
+}
+
+function datasetSignature(records, columns) {
+  let h = 2166136261;
+  const cols = columns.slice().sort();
+  for (const c of cols) {
+    h = ((h ^ c.length) * 16777619) >>> 0;
+    for (let j = 0; j < c.length; j++) h = ((h ^ c.charCodeAt(j)) * 16777619) >>> 0;
+  }
+  h = ((h ^ records.length) * 16777619) >>> 0;
+  const numeric = cols.filter((c) => c !== 'component_id' && c !== 'lot_id' && c !== 'is_defective' && c !== 'test_hour' && c !== 'burn_in_temp' && !c.startsWith('_'));
+  const step = Math.max(1, Math.floor(records.length / 96));
+  let count = 0;
+  for (let r = 0; r < records.length; r += step) {
+    const row = records[r];
+    for (const c of numeric) {
+      const v = row[c];
+      if (typeof v === 'number' && isFinite(v)) {
+        let bits = Math.round(v * 10000);
+        h = ((h ^ bits) * 16777619) >>> 0;
+        count++;
+      }
+    }
+    if (count > 4096) break;
+  }
+  return h.toString(16);
+}
+
 async function trainDriftModels(dataset) {
   const records = dataset.records;
   const columns = dataset.columns;
+  const signature = datasetSignature(records, columns);
+  if (Object.keys(driftModels).length && state.trained_signature === signature) {
+    return state.trained_parameters;
+  }
   resetDriftModels();
+  const trainRecords = records.length > 600
+    ? records.filter((_, i) => i % Math.ceil(records.length / 600) === 0)
+    : records;
   const params = [];
   const trainingMetrics = {};
   const safetySlopes = {};
@@ -1088,7 +1151,7 @@ async function trainDriftModels(dataset) {
       ? ['value_0h', 'value_24h', 'drift_0h_24h', 'drift_rate', 'pct_change', 'value_96h', 'drift_24h_96h', 'drift_rate_24h_96h']
       : ['value_0h', 'value_24h', 'drift_0h_24h', 'drift_rate', 'pct_change'];
 
-    const rows = records.filter((r) =>
+    const rows = trainRecords.filter((r) =>
       r[col0] !== undefined && r[col0] !== null && !isNaN(r[col0]) &&
       r[col24] !== undefined && r[col24] !== null && !isNaN(r[col24]) &&
       r[col168] !== undefined && r[col168] !== null && !isNaN(r[col168]) &&
@@ -1135,18 +1198,18 @@ async function trainDriftModels(dataset) {
       },
       random_forest: {
         name: 'random_forest',
-        factory: (Xtr, ytr) => trainRandomForest(Xtr, ytr, 100, 10, 42),
+        factory: (Xtr, ytr, lite) => trainRandomForest(Xtr, ytr, lite ? 20 : 100, lite ? 8 : 10, 42),
       },
       gradient_boosting: {
         name: 'gradient_boosting',
-        factory: (Xtr, ytr) => trainGradientBoosting(Xtr, ytr, 100, 5, 0.1, 42),
+        factory: (Xtr, ytr, lite) => trainGradientBoosting(Xtr, ytr, lite ? 20 : 100, 5, 0.1, 42),
       },
     };
 
     let bestScore = -Infinity;
     let bestName = null;
     for (const [name, mm] of Object.entries(models)) {
-      const avg = crossValScore(mm.factory, Xscaled, y, folds);
+      const avg = crossValScore((Xtr, ytr) => mm.factory(Xtr, ytr, true), Xscaled, y, folds);
       if (avg > bestScore) {
         bestScore = avg;
         bestName = name;
@@ -1154,7 +1217,7 @@ async function trainDriftModels(dataset) {
       await yieldThread();
     }
 
-    const bestModel = models[bestName].factory(Xscaled, y);
+    const bestModel = models[bestName].factory(Xscaled, y, false);
     const predictions = Xscaled.map((x) => bestModel.predict(x));
     const mae = mean(predictions.map((p, i) => Math.abs(p - y[i])));
     const rmse = Math.sqrt(mean(predictions.map((p, i) => (p - y[i]) ** 2)));
@@ -1197,7 +1260,7 @@ async function trainDriftModels(dataset) {
     } else {
     // ---- flexible path: reconstruct any subset of checkpoints ----
     const rates = [];
-    for (const r of records) {
+    for (const r of trainRecords) {
       const s = seriesForRow(r, prefix);
       if (s.hours.length < 2) continue;
       const v0 = colValAt(r, prefix, 0, s);
@@ -1235,6 +1298,7 @@ async function trainDriftModels(dataset) {
   state.training_metrics = trainingMetrics;
   state.safety_slopes = safetySlopes;
   state.feature_importances = featureImportances;
+  state.trained_signature = signature;
   persist();
   return params;
 }
@@ -1399,6 +1463,10 @@ function generateDriftExplanation(param, features, predicted168, driftRate, safe
 }
 
 async function predictDriftBatch(dataset) {
+  const signature = datasetSignature(dataset.records, dataset.columns);
+  if (Object.keys(driftModels).length && state.predicted_signature === signature && state.drift_results && state.drift_results.length) {
+    return { allResults: state.drift_results, accuracyMetrics: state.drift_accuracy || {} };
+  }
   const allResults = [];
   const accuracyMetrics = {};
   const detected = detectParamTimepoints(dataset.columns);
@@ -1448,6 +1516,7 @@ async function predictDriftBatch(dataset) {
     allResults.push(...results);
     if (has168) accuracyMetrics[param] = getOverallAccuracy(results);
   }
+  state.predicted_signature = signature;
   return { allResults, accuracyMetrics };
 }
 
@@ -1820,6 +1889,7 @@ export async function handleApiRequest(url, init = {}) {
       state.dataset = { records: cleaned, columns };
       state.filename = fname;
       state.columns = columns;
+      invalidateDriftCache();
       persist();
       return respond(200, {
         message: 'File uploaded successfully',
@@ -1848,6 +1918,7 @@ export async function handleApiRequest(url, init = {}) {
     const cleaned = ensureIds(records);
     const columns = Object.keys(cleaned[0] || {}).filter((k) => !k.startsWith('_'));
     state.dataset = { records: cleaned, columns };
+    invalidateDriftCache();
     persist();
     return respond(200, {
       message: `Uploaded ${cleaned.length} components`,
@@ -1871,6 +1942,7 @@ export async function handleApiRequest(url, init = {}) {
     state.dataset = { records, columns };
     state.filename = 'sample_burn_in_data.csv';
     state.columns = columns;
+    invalidateDriftCache();
     persist();
     return respond(200, {
       message: 'Sample data generated',
@@ -1943,7 +2015,8 @@ export async function handleApiRequest(url, init = {}) {
     if (err) return err;
     if (!state.dataset) return respond(400, { detail: 'No data loaded' });
     const ds = { ...state.dataset, records: ensureIds(state.dataset.records) };
-    if (!Object.keys(driftModels).length && state.trained_parameters.length) {
+    const sig = datasetSignature(ds.records, ds.columns);
+    if (!Object.keys(driftModels).length || state.trained_signature !== sig) {
       await trainDriftModels(ds);
     }
     const { allResults, accuracyMetrics } = await predictDriftBatch(ds);
