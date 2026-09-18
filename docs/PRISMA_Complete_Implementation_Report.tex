@@ -152,7 +152,7 @@ with a 6-step explanation chain and downloadable acceptance/rejection certificat
 component escapes the floor.
 
 \subsection*{Where we have implemented}
-All logic exists in-browser (\code{lib/maverick-api.js}, 1796 lines) so the system runs with zero
+All logic exists in-browser (\code{lib/maverick-api.js}, 1780 lines) so the system runs with zero
 servers and zero ML libraries --- fully from scratch --- and is deployed as a static site at
 \url{https://isro-burnin-detection.vercel.app}. Source lives at
 \url{https://github.com/Manjunath2006548/maverick-sih2026} (commit \code{aefd16c}).
@@ -213,7 +213,7 @@ as a static site with no backend, no GPU, and no cloud ML service.
 \end{itemize}
 
 \subsection*{Where we have implemented}
-\code{frontend/lib/maverick-api.js} (1796 lines): the entire in-browser backend.
+\code{frontend/lib/maverick-api.js} (1780 lines): the entire in-browser backend.
 \code{frontend/lib/api.js} (107 lines): client wrapper with token management and logout.
 \code{frontend/next.config.js}: static export + Netlify detection.
 \code{frontend/render.yaml}: Render deployment (Python 3.11.9 + static).
@@ -241,7 +241,7 @@ Styling & Tailwind CSS 3.4.0 + \code{globals.css} & ISRO glass/glow theme\\
 Fonts & Inter (300--900) + JetBrains Mono (400--600) & via Google Fonts\\
 Charts & Recharts 2.10.3 & accuracy cards\\
 API layer & \code{lib/api.js} (107 lines) & token, 401 redirect, logout\\
-ML backend & \code{lib/maverick-api.js} (1796 lines) & zero-server in-browser\\
+ML backend & \code{lib/maverick-api.js} (1780 lines) & zero-server in-browser\\
 Deployment & Vercel (primary), Netlify/Render (compatible) & static, no runtime\\
 Dev tools & PostCSS 8.4, Autoprefixer 10.4 & build pipeline\\
 \bottomrule
@@ -864,7 +864,7 @@ Build size & 115 kB first load (analysis page)\\
 \toprule
 \textbf{File} & \textbf{Lines / Purpose}\\
 \midrule
-\code{frontend/lib/maverick-api.js} & 1796 --- in-browser backend (auth, data, ML, explain)\\
+\code{frontend/lib/maverick-api.js} & 1780 --- in-browser backend (auth, data, ML, explain)\\
 \code{frontend/app/analysis/page.js} & 1581 --- comprehensive, Module A/B, single prediction\\
 \code{frontend/app/upload/page.js} & 349 --- CSV, manual, sample-data tabs\\
 \code{frontend/app/login/page.js} & 295 --- auth, password toggle, role selector\\

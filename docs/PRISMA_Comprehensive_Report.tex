@@ -257,11 +257,11 @@ quality managers (audit trail via certificates), and procurement (incoming mater
 Module B automatically adapts its feature vector, and if 168h is absent Module B trains on the
 0h$\rightarrow$24h drift trend instead. A minimum of 10 training rows per parameter is required.
 
-\subsection*{4.3 Sample CSV (first 3 rows of the header + data)}
+\subsection*{4.3 Sample CSV (actual header + first 2 rows of the seed-42 data)}
 \begin{lstlisting}
-component_id,lot_id,is_defective,burn_in_temp,iddq_0h,iddq_24h,iddq_96h,iddq_168h,leakage_0h,...,supply_current_168h
-COMP-10001,LOT-A001,true,124,8.94,9.31,10.01,10.85,4.02,...,51.30
-COMP-10002,LOT-A001,false,124,8.71,8.87,9.05,9.24,3.88,...,49.71
+component_id,lot_id,is_defective,burn_in_temp,iddq_0h,leakage_0h,delay_0h,supply_current_0h,iddq_24h,leakage_24h,delay_24h,supply_current_24h,iddq_96h,leakage_96h,delay_96h,supply_current_96h,iddq_168h,leakage_168h,delay_168h,supply_current_168h
+COMP-01001,LOT-A001,false,124,10.2491,6.4211,2.3883,50.6173,10.0894,6.5511,2.3838,50.5297,10.0981,6.5879,2.4063,50.9637,10.1435,6.6421,2.4162,50.8007
+COMP-01002,LOT-A001,false,124,9.3815,6.7137,2.3557,50.1979,9.2259,6.7265,2.3537,49.8946,9.457,6.7987,2.3755,50.5744,9.4793,6.8345,2.3797,50.9254
 ...
 \end{lstlisting}
 
@@ -336,7 +336,7 @@ cards, and downloadable HTML \emph{Acceptance / Rejection / Manual Review} certi
 
 \answerbox{Complete artefact inventory}{
   \begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Backend logic} (\code{frontend/lib/maverick-api.js}, 1796 lines): SHA-256,
+    \item \textbf{Backend logic} (\code{frontend/lib/maverick-api.js}, 1780 lines): SHA-256,
           MT19937, Gaussian RNG, Z-score/IQR/absolute detectors, risk scoring, Ridge / Random Forest /
           Gradient Boosting from scratch, StandardScaler, 5-fold CV, safety slope, API router for all
           \code{/api} routes, and the fetch shim.
