@@ -115,7 +115,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-isro-blue to-isro-orange flex items-center justify-center font-bold text-white text-xl mb-4 shadow-xl shadow-isro-blue/30">
-            ISRO
+            M
           </div>
           <h1 className="text-2xl font-bold text-white">PRISMA</h1>
           <p className="text-sm text-gray-500 mt-1">Burn-In Anomaly Detection System</p>

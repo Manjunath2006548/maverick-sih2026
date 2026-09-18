@@ -36,7 +36,7 @@ export default function Sidebar({ user, active }) {
       <div className="p-6 border-b border-white/5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-isro-blue to-isro-orange flex items-center justify-center font-bold text-white text-sm shadow-lg shadow-isro-blue/30">
-            ISRO
+            M
           </div>
           <div>
             <h2 className="text-sm font-bold text-white">PRISMA</h2>

@@ -1008,7 +1008,7 @@ function downloadCertificate({ cls, rows = [] }) {
     <div style="text-align:center;border-bottom:2px solid ${accent};padding-bottom:16px;margin-bottom:20px;">
       <p style="font-size:10px;letter-spacing:2px;color:#64748b;margin:0 0 4px;">PRISMA BURN-IN SCREENING</p>
       <h1 style="font-size:24px;color:${accent};margin:0;letter-spacing:1px;">${title}</h1>
-      <p style="font-size:11px;color:#64748b;margin:6px 0 0;">AI-Driven Anomaly Detection in Component Burn-In &amp; Screening | Department of Space | ISRO</p>
+      <p style="font-size:11px;color:#64748b;margin:6px 0 0;">AI-Driven Anomaly Detection in Component Burn-In &amp; Screening</p>
     </div>
 
     <p style="font-size:13px;line-height:1.7;color:#334155;">${body}</p>
@@ -1027,8 +1027,6 @@ function downloadCertificate({ cls, rows = [] }) {
 
     <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;">
       <div>
-        <p style="font-size:11px;color:#64748b;margin:0;">Issued By: PRISMA AI Screening System</p>
-        <p style="font-size:11px;color:#64748b;margin:2px 0 0;">Department of Space | ISRO</p>
         <p style="font-size:10px;color:#94a3b8;margin:6px 0 0;font-family:monospace;">Ref: ${ref}</p>
       </div>
       <div style="text-align:right;">
@@ -1172,8 +1170,6 @@ function ClassificationDetail({ cls, rows = [], mode = 'outlier', onClose, onVie
         {/* Footer */}
         <div className="flex items-end justify-between pt-4 border-t border-white/10">
           <div>
-            <p className="text-[10px] text-gray-500">Issued By: PRISMA AI Screening System</p>
-            <p className="text-[10px] text-gray-500 mt-0.5">Department of Space | ISRO</p>
             <p className="text-[10px] text-gray-600 mt-0.5 font-mono">
               Ref: MAV/{new Date().toISOString().slice(0, 10).replace(/-/g, '')}/{cls}/{rows.length}
             </p>
