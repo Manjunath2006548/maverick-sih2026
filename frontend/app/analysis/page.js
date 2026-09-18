@@ -7,6 +7,15 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Sidebar from '../../components/Sidebar';
 
+const VERDICT_TEXT = {
+  green: 'text-green-400',
+  red: 'text-red-400',
+  orange: 'text-orange-400',
+  yellow: 'text-yellow-400',
+  white: 'text-white',
+  blue: 'text-isro-lightblue',
+};
+
 export default function AnalysisPage() {
   const [user, setUser] = useState(null);
   const [activeModule, setActiveModule] = useState('combined');
@@ -36,7 +45,14 @@ export default function AnalysisPage() {
   const checkDataStatus = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) { setDataStatus({ hasData: false }); return; }
       const res = await fetch('/api/data/stats', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        router.push('/login');
+        return;
+      }
       const data = await res.json();
       if (data && data.error) {
         setDataStatus({ hasData: false });
@@ -53,11 +69,12 @@ export default function AnalysisPage() {
     } catch {
       setDataStatus({ hasData: false });
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
-    if (!stored) { router.push('/login'); return; }
+    const token = localStorage.getItem('token');
+    if (!stored || !token) { router.push('/login'); return; }
     setUser(JSON.parse(stored));
     checkDataStatus();
   }, [router, checkDataStatus]);
@@ -215,14 +232,15 @@ export default function AnalysisPage() {
       const res = await fetch(`/api/analysis/explain/${componentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
         setExplainability(data);
         setSelectedComponent(componentId);
+      } else {
+        setMessage(data.detail || `Could not load report for ${componentId}`);
       }
     } catch (err) {
-      console.error(err);
+      setMessage(`Error: ${err.message || err}`);
     }
   };
 
@@ -385,14 +403,14 @@ export default function AnalysisPage() {
                             certClass === stat.cls ? 'border-isro-lightblue/40 ring-1 ring-isro-lightblue/30' : 'border-white/5 hover:border-white/20'
                           }`}
                           title={`Click to view ${stat.cls} components`}>
-                          <p className={`text-3xl font-bold text-isro-${stat.color}`}>{stat.value}</p>
+                          <p className={`text-3xl font-bold ${VERDICT_TEXT[stat.color] || 'text-white'}`}>{stat.value}</p>
                           <p className="text-xs text-gray-400 mt-1">{stat.label}
                             <span className="block text-[9px] text-gray-600 mt-0.5">Click to view ↓</span>
                           </p>
                         </button>
                       ) : (
                         <div key={stat.label} className="text-center p-4 bg-isro-dark rounded-xl">
-                          <p className={`text-3xl font-bold text-isro-${stat.color}`}>{stat.value}</p>
+                          <p className={`text-3xl font-bold ${VERDICT_TEXT[stat.color] || 'text-white'}`}>{stat.value}</p>
                           <p className="text-xs text-gray-400 mt-1">{stat.label}</p>
                         </div>
                       )
@@ -672,14 +690,14 @@ function OutlierResults({ data, onViewExplain, certClass = null, setCertClass })
                 certClass === stat.cls ? 'border-isro-lightblue/40 ring-1 ring-isro-lightblue/30' : 'border-white/5 hover:border-white/20'
               }`}
               title={`Click to view ${stat.cls} components`}>
-              <p className={`text-2xl font-bold text-isro-${stat.color}`}>{stat.value}</p>
+              <p className={`text-2xl font-bold ${VERDICT_TEXT[stat.color] || 'text-white'}`}>{stat.value}</p>
               <p className="text-xs text-gray-400 mt-1">{stat.label}
                 <span className="block text-[9px] text-gray-600 mt-0.5">Click to view ↓</span>
               </p>
             </button>
           ) : (
             <div key={stat.label} className="text-center p-4 bg-isro-dark rounded-xl">
-              <p className={`text-2xl font-bold text-isro-${stat.color}`}>{stat.value}</p>
+              <p className={`text-2xl font-bold ${VERDICT_TEXT[stat.color] || 'text-white'}`}>{stat.value}</p>
               <p className="text-xs text-gray-400 mt-1">{stat.label}</p>
             </div>
           )
@@ -824,14 +842,14 @@ function DriftResults({ data, onViewExplain }) {
                 certClass === stat.cls ? 'border-isro-lightblue/40 ring-1 ring-isro-lightblue/30' : 'border-white/5 hover:border-white/20'
               }`}
               title={`Click to view ${stat.cls} predictions`}>
-              <p className={`text-2xl font-bold text-isro-${stat.color}`}>{stat.value}</p>
+              <p className={`text-2xl font-bold ${VERDICT_TEXT[stat.color] || 'text-white'}`}>{stat.value}</p>
               <p className="text-xs text-gray-400 mt-1">{stat.label}
                 <span className="block text-[9px] text-gray-600 mt-0.5">Click to view ↓</span>
               </p>
             </button>
           ) : (
             <div key={stat.label} className="text-center p-4 bg-isro-dark rounded-xl">
-              <p className={`text-2xl font-bold text-isro-${stat.color}`}>{stat.value}</p>
+              <p className={`text-2xl font-bold ${VERDICT_TEXT[stat.color] || 'text-white'}`}>{stat.value}</p>
               <p className="text-xs text-gray-400 mt-1">{stat.label}</p>
             </div>
           )
@@ -864,8 +882,8 @@ function DriftResults({ data, onViewExplain }) {
                 </div>
                 <div>
                   <span className="text-gray-500">R2 Score</span>
-                  <span className={`block font-mono ${metrics.r2_score > 0.8 ? 'text-green-400' : 'text-orange-400'}`}>
-                    {metrics.r2_score?.toFixed(6)}
+                  <span className={`block font-mono ${metrics.r2_score != null && metrics.r2_score > 0.8 ? 'text-green-400' : 'text-orange-400'}`}>
+                    {metrics.r2_score != null ? metrics.r2_score.toFixed(6) : '—'}
                   </span>
                 </div>
                 <div>

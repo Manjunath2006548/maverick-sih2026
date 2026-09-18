@@ -6,6 +6,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '../../components/Sidebar';
 
+const CHIP_COLORS = {
+  blue: { bg: 'rgba(77,166,255,0.15)', fg: '#4da6ff' },
+  orange: { bg: 'rgba(251,146,60,0.15)', fg: '#fb923c' },
+  red: { bg: 'rgba(239,68,68,0.15)', fg: '#ef4444' },
+  green: { bg: 'rgba(34,197,94,0.15)', fg: '#22c55e' },
+};
+
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
@@ -33,6 +40,12 @@ export default function Dashboard() {
       if (res.ok) {
         const data = await res.json();
         setDashboardData(data);
+      } else if (res.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        router.push('/login');
+      } else {
+        setError(`Failed to load dashboard (${res.status})`);
       }
     } catch (err) {
       setError('Failed to load dashboard');
@@ -62,6 +75,12 @@ export default function Dashboard() {
             </p>
           </div>
 
+          {error && (
+            <div className="mb-6 p-4 rounded-xl text-sm bg-red-500/10 border border-red-500/20 text-red-400">
+              {error}
+            </div>
+          )}
+
           {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             {[
@@ -69,21 +88,24 @@ export default function Dashboard() {
               { label: 'Lots Analyzed', value: dashboardData?.data_info?.lots || '---', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z', color: 'orange' },
               { label: 'Anomalies Found', value: dashboardData?.outlier?.classifications?.REJECT || '---', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', color: 'red' },
               { label: 'Models Trained', value: dashboardData?.drift_accuracy ? Object.keys(dashboardData.drift_accuracy).length : '0', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', color: 'green' },
-            ].map((stat, i) => (
+            ].map((stat, i) => {
+              const chip = CHIP_COLORS[stat.color] || { bg: 'rgba(255,255,255,0.08)', fg: '#f3f4f6' };
+              return (
               <div key={i} className="glass-card rounded-xl p-6 relative overflow-hidden group hover:glow-blue transition-all">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">{stat.label}</p>
                     <p className="text-3xl font-bold text-white mt-2">{stat.value}</p>
                   </div>
-                  <div className={`w-12 h-12 rounded-xl bg-isro-${stat.color}/10 flex items-center justify-center`}>
-                    <svg className={`w-6 h-6 text-isro-${stat.color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center`} style={{ backgroundColor: chip.bg }}>
+                    <svg className="w-6 h-6" style={{ color: chip.fg }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
                     </svg>
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Two Column Layout */}
@@ -111,6 +133,7 @@ export default function Dashboard() {
                   ].map((item) => {
                     const total = dashboardData.outlier.total_analyzed || 1;
                     const pct = (item.count / total * 100).toFixed(1);
+                    const barFg = CHIP_COLORS[item.color]?.fg || '#f3f4f6';
                     return (
                       <div key={item.label}>
                         <div className="flex justify-between text-sm mb-1">
@@ -119,8 +142,8 @@ export default function Dashboard() {
                         </div>
                         <div className="h-2 bg-isro-dark rounded-full overflow-hidden">
                           <div
-                            className={`h-full bg-isro-${item.color} rounded-full transition-all duration-1000`}
-                            style={{ width: `${pct}%` }}
+                            className="h-full rounded-full transition-all duration-1000"
+                            style={{ width: `${pct}%`, backgroundColor: barFg }}
                           />
                         </div>
                       </div>

@@ -18,11 +18,13 @@ export default function UploadPage() {
   const [manualEntries, setManualEntries] = useState([]);
   const [activeTab, setActiveTab] = useState('csv');
   const [sampleCount, setSampleCount] = useState(200);
+  const [readyForAnalysis, setReadyForAnalysis] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
-    if (!stored) { router.push('/login'); return; }
+    const token = localStorage.getItem('token');
+    if (!stored || !token) { router.push('/login'); return; }
     setUser(JSON.parse(stored));
   }, []);
 
@@ -32,6 +34,7 @@ export default function UploadPage() {
 
     setLoading(true);
     setMessage('');
+    setReadyForAnalysis(false);
     try {
       const token = localStorage.getItem('token');
       const formData = new FormData();
@@ -47,6 +50,7 @@ export default function UploadPage() {
       if (!res.ok) throw new Error(data.detail || 'Upload failed');
 
       setUploadResult(data);
+      setReadyForAnalysis(true);
       setMessage(`Successfully uploaded ${data.rows} records with ${data.columns.length} columns`);
     } catch (err) {
       setMessage(`Error: ${err.message}`);
@@ -58,13 +62,16 @@ export default function UploadPage() {
   const loadSampleData = async () => {
     setLoading(true);
     setMessage('');
+    setReadyForAnalysis(false);
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/data/sample?count=${sampleCount}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Sample generation failed');
       setUploadResult(data);
+      setReadyForAnalysis(true);
       setMessage(`Sample data generated: ${data.total_count} components across ${data.lots.length} lots (${data.defective_count} defective)`);
     } catch (err) {
       setMessage(`Error: ${err.message}`);
@@ -76,6 +83,7 @@ export default function UploadPage() {
   const addManualEntry = () => {
     const measurements = {};
     let validCount = 0;
+    let skipped = false;
     manualText.split('\n').forEach(line => {
       const trimmed = line.trim();
       if (!trimmed) return;
@@ -85,12 +93,17 @@ export default function UploadPage() {
       const key = trimmed.slice(0, sepIdx).trim();
       const value = trimmed.slice(sepIdx + 1).trim();
       if (key && value) {
-        measurements[key] = parseFloat(value);
-        validCount++;
+        const num = parseFloat(value);
+        if (!isNaN(num) && isFinite(num)) {
+          measurements[key] = num;
+          validCount++;
+        } else {
+          skipped = true;
+        }
       }
     });
     if (validCount === 0) {
-      setMessage('Please enter at least one measurement (key: value)');
+      setMessage('Please enter at least one valid numeric measurement (key: value)');
       return;
     }
     const cid = manualEntry.component_id.trim() || null;
@@ -100,7 +113,7 @@ export default function UploadPage() {
     setManualEntry({ component_id: '', lot_id: '', measurements: {} });
     setManualText('');
     const compLabel = cid || 'Auto-assigned';
-    setMessage(`Added component ${compLabel} with ${validCount} measurements${autoNote}. Total entries: ${manualEntries.length + 1}`);
+    setMessage(`Added component ${compLabel} with ${validCount} measurements${autoNote}${skipped ? ' (non-numeric values were skipped)' : ''}. Total entries: ${manualEntries.length + 1}`);
   };
 
   const submitManualEntries = async () => {
@@ -110,6 +123,7 @@ export default function UploadPage() {
     }
 
     setLoading(true);
+    setReadyForAnalysis(false);
     try {
       const token = localStorage.getItem('token');
       const res = await fetch('/api/upload/manual', {
@@ -129,6 +143,7 @@ export default function UploadPage() {
       if (!res.ok) throw new Error(data.detail || 'Submit failed');
 
       setUploadResult(data);
+      setReadyForAnalysis(true);
       setMessage(`Uploaded ${data.message}`);
       setManualEntries([]);
     } catch (err) {
@@ -164,14 +179,21 @@ export default function UploadPage() {
                 ? 'bg-red-500/10 border border-red-500/20 text-red-400'
                 : 'bg-isro-green/10 border border-isro-green/20 text-isro-green'
             }`}>
-              {message}
+              <p>{message}</p>
+              {readyForAnalysis && (
+                <button
+                  onClick={() => router.push('/analysis')}
+                  className="mt-3 px-5 py-2.5 bg-gradient-to-r from-isro-blue to-blue-500 text-white font-semibold rounded-lg hover:opacity-90 transition-all shadow-lg shadow-isro-blue/25">
+                  Run Burn-In Analysis →
+                </button>
+              )}
             </div>
           )}
 
           {/* Tab Navigation */}
           <div className="flex gap-2 mb-6">
             {[
-              { id: 'csv', label: 'CSV / Excel Upload' },
+              { id: 'csv', label: 'CSV Upload' },
               { id: 'manual', label: 'Manual Entry' },
               { id: 'sample', label: 'Sample Data' },
             ].map((tab) => (
@@ -193,13 +215,13 @@ export default function UploadPage() {
             <div className="glass-card rounded-2xl p-8">
               <h3 className="text-lg font-bold text-white mb-4">Upload Parametric Data File</h3>
               <p className="text-sm text-gray-400 mb-6">
-                Upload a CSV or Excel file containing component measurements at different time intervals (0h, 24h, 96h, 168h).
+                Upload a CSV file containing component measurements at different time intervals (0h, 24h, 96h, 168h).
               </p>
 
               <div className="border-2 border-dashed border-white/10 rounded-xl p-12 text-center hover:border-isro-blue/30 transition-all">
                 <input
                   type="file"
-                  accept=".csv,.xlsx,.xls"
+                  accept=".csv"
                   onChange={handleFileUpload}
                   className="hidden"
                   id="file-upload"
@@ -209,7 +231,7 @@ export default function UploadPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                   <p className="text-gray-400 mb-2">Click to upload or drag and drop</p>
-                  <p className="text-xs text-gray-600">CSV, XLSX, or XLS files supported</p>
+                  <p className="text-xs text-gray-600">CSV files supported (.csv)</p>
                 </label>
               </div>
 
@@ -269,9 +291,9 @@ export default function UploadPage() {
                 </button>
                 <button
                   onClick={submitManualEntries}
-                  disabled={manualEntries.length === 0}
+                  disabled={loading || manualEntries.length === 0}
                   className="px-5 py-2.5 bg-isro-blue text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all disabled:opacity-50">
-                  Submit {manualEntries.length} Entries
+                  {loading ? 'Submitting...' : `Submit ${manualEntries.length} Entries`}
                 </button>
               </div>
 
@@ -377,3 +399,4 @@ export default function UploadPage() {
     </div>
   );
 }
+

@@ -878,10 +878,19 @@ function fitLinear(X, y, alpha) {
   const xtx = matMul(xt, X);
   for (let i = 0; i < d; i++) xtx[i][i] += alpha;
   const xty = xt.map((row) => row.reduce((s, v, k) => s + v * y[k], 0));
-  const inv = matrixInvert(xtx);
+  let inv = matrixInvert(xtx);
+  if (!inv) {
+    for (let extra = 10; !inv && extra <= 1000; extra *= 10) {
+      const xtx2 = xtx.map((row) => row.slice());
+      for (let i = 0; i < d; i++) xtx2[i][i] += extra;
+      inv = matrixInvert(xtx2);
+    }
+  }
   if (!inv) return null;
   const beta = inv.map((row) => row.reduce((s, v, k) => s + v * xty[k], 0));
-  const intercept = mean(y) - beta.reduce((s, v, k) => s + v * mean(X.map((r) => r[k])), 0);
+  const colMeans = [];
+  for (let k = 0; k < d; k++) colMeans[k] = mean(X.map((r) => r[k]));
+  const intercept = mean(y) - beta.reduce((s, v, k) => s + v * colMeans[k], 0);
   return { beta, intercept };
 }
 
@@ -1245,7 +1254,11 @@ async function trainDriftModels(dataset) {
     } else {
       const beta = bestModel.beta;
       imp = {};
-      featureNames.forEach((name, i) => { imp[name] = Math.abs(beta[i] || 0); });
+      if (beta) {
+        featureNames.forEach((name, i) => { imp[name] = Math.abs(beta[i] || 0); });
+      } else {
+        featureNames.forEach((name) => { imp[name] = 0; });
+      }
     }
     featureImportances[prefix] = imp;
 
@@ -1805,7 +1818,9 @@ export async function handleApiRequest(url, init = {}) {
 
   async function bodyJson() {
     if (!init.body) return {};
-    if (typeof init.body === 'string') return JSON.parse(init.body || '{}');
+    if (typeof init.body === 'string') {
+      try { return JSON.parse(init.body || '{}'); } catch (e) { return {}; }
+    }
     if (typeof FormData !== 'undefined' && init.body instanceof FormData) {
       const obj = {};
       for (const [k, v] of init.body.entries()) obj[k] = v;
@@ -1823,10 +1838,13 @@ export async function handleApiRequest(url, init = {}) {
 
   const respond = (status, body) => ({ status, body });
 
+  const VALID_ROLES = ['engineer', 'qa_inspector', 'admin'];
+  const normalizeEmail = (e) => (typeof e === 'string' ? e.trim().toLowerCase() : '');
+
   /* ---- auth ---- */
   if (method === 'POST' && route === '/auth/login') {
     const { email, password } = await bodyJson();
-    const user = state.users[email];
+    const user = state.users[normalizeEmail(email)];
     if (!user || user.password !== sha256Hex(password)) {
       return respond(401, { detail: 'Invalid credentials' });
     }
@@ -1841,12 +1859,20 @@ export async function handleApiRequest(url, init = {}) {
 
   if (method === 'POST' && route === '/auth/register') {
     const { email, password, name, role = 'engineer' } = await bodyJson();
-    if (state.users[email]) return respond(400, { detail: 'Email already registered' });
+    const cleanEmail = normalizeEmail(email);
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return respond(400, { detail: 'A valid email address is required' });
+    }
+    if (!name || !String(name).trim()) return respond(400, { detail: 'Full name is required' });
+    if (!VALID_ROLES.includes(role)) {
+      return respond(400, { detail: `Role must be one of: ${VALID_ROLES.join(', ')}` });
+    }
+    if (state.users[cleanEmail]) return respond(400, { detail: 'Email already registered' });
     const pwError = validatePassword(password);
     if (pwError) return respond(400, { detail: pwError });
-    state.users[email] = { password: sha256Hex(password), name, role };
+    state.users[cleanEmail] = { password: sha256Hex(password), name, role };
     persist();
-    return respond(200, { message: 'Registration successful', email, role });
+    return respond(200, { message: 'Registration successful', email: cleanEmail, role });
   }
 
   if (method === 'POST' && route === '/auth/logout') {
@@ -1868,10 +1894,10 @@ export async function handleApiRequest(url, init = {}) {
     const err = await requireAuth();
     if (err) return err;
     const fd = await bodyJson();
-    const file = fd.file;
+    let file = fd.file;
     if (!file && init.body && typeof FormData !== 'undefined' && init.body instanceof FormData) {
       const f = init.body.get('file');
-      if (f) { file.name = f.name; file.text = () => f.text(); }
+      if (f && typeof f === 'object' && typeof f.text === 'function') file = f;
     }
     const fname = file && file.name;
     if (!fname || !/\.(csv|xlsx|xls)$/i.test(fname)) {
