@@ -878,13 +878,20 @@ function DriftResults({ data, onViewExplain }) {
         </div>
       )}
 
+      {(data.results || []).some((r) => r.item_source === 'reconstructed') && (
+        <p className="text-[10px] text-isro-orange mb-2">
+          * Values marked with an asterisk were reconstructed from the checkpoints you provided (any hours between 0 and 168).
+          Green = directly provided; orange/asterisk = computed by interpolation.
+        </p>
+      )}
+
       <div className="overflow-x-auto scrollbar-thin max-h-96 overflow-y-auto">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-isro-card">
             <tr className="border-b border-white/5">
               <th className="px-3 py-2 text-left text-xs text-gray-400">Param</th>
-              <th className="px-3 py-2 text-left text-xs text-gray-400">0h</th>
-              <th className="px-3 py-2 text-left text-xs text-gray-400">24h</th>
+              <th className="px-3 py-2 text-left text-xs text-gray-400">0h*</th>
+              <th className="px-3 py-2 text-left text-xs text-gray-400">24h*</th>
               <th className="px-3 py-2 text-left text-xs text-gray-400">Pred 168h</th>
               <th className="px-3 py-2 text-left text-xs text-gray-400">Actual 168h</th>
               <th className="px-3 py-2 text-left text-xs text-gray-400">Error</th>
@@ -895,8 +902,12 @@ function DriftResults({ data, onViewExplain }) {
             {(data.results || []).map((r, i) => (
               <tr key={i} className="border-b border-white/3 hover:bg-white/3">
                 <td className="px-3 py-2 text-xs font-medium text-white uppercase">{r.parameter}</td>
-                <td className="px-3 py-2 text-xs font-mono text-gray-300">{r.input?.value_0h?.toFixed(3)}</td>
-                <td className="px-3 py-2 text-xs font-mono text-gray-300">{r.input?.value_24h?.toFixed(3)}</td>
+                <td className={`px-3 py-2 text-xs font-mono ${r.component_checkpoints?.source?.['0'] === 'direct' ? 'text-green-400' : r.component_checkpoints?.source?.['0'] === 'interpolated' ? 'text-isro-orange' : 'text-gray-500'}`}>
+                  {r.input?.value_0h != null ? `${r.input.value_0h.toFixed(3)}${r.component_checkpoints?.source?.['0'] === 'direct' ? '' : '*'}` : '—'}
+                </td>
+                <td className={`px-3 py-2 text-xs font-mono ${r.component_checkpoints?.source?.['24'] === 'direct' ? 'text-green-400' : r.component_checkpoints?.source?.['24'] === 'interpolated' ? 'text-isro-orange' : 'text-gray-500'}`}>
+                  {r.input?.value_24h != null ? `${r.input.value_24h.toFixed(3)}${r.component_checkpoints?.source?.['24'] === 'direct' ? '' : '*'}` : '—'}
+                </td>
                 <td className="px-3 py-2 text-xs font-mono text-isro-orange">{r.prediction?.predicted_168h?.toFixed(3)}</td>
                 <td className="px-3 py-2 text-xs font-mono text-gray-400">{r.actual_168h?.toFixed(3) || '---'}</td>
                 <td className="px-3 py-2 text-xs font-mono text-gray-400">{r.prediction_error?.toFixed(6) || '---'}</td>
@@ -1257,8 +1268,9 @@ function DetailedReport({ data, onClose }) {
     <div className="fixed right-0 top-0 bottom-0 w-[640px] bg-isro-dark/95 backdrop-blur-xl border-l border-white/10 z-50 overflow-y-auto p-6">
       <div className="sticky top-0 -mt-6 px-6 py-4 bg-isro-dark/95 backdrop-blur-lg border-b border-white/10 -mx-6 mb-6 flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-bold text-white font-mono">{data.component_id}</h3>
+          <h3 className="text-lg font-bold text-white font-mono">{data.component_id}{data.auto_assigned ? ' *' : ''}</h3>
           {data.lot_id && <p className="text-[10px] text-gray-500 font-mono mt-0.5">Lot: {data.lot_id}</p>}
+          {data.auto_assigned && <p className="text-[9px] text-isro-orange mt-0.5">* component/lot ID auto-assigned by PRISMA</p>}
         </div>
         <button onClick={onClose} className="text-gray-400 hover:text-white" aria-label="Close report">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1341,14 +1353,24 @@ function DetailedReport({ data, onClose }) {
                 {Object.entries(data.raw_values).map(([param, t]) => (
                   <tr key={param} className="border-b border-white/5">
                     <td className="px-2 py-1.5 font-medium text-white uppercase">{param.replace('_', ' ')}</td>
-                    <td className="px-2 py-1.5 text-right font-mono text-gray-300">{num(t['_0h'])}</td>
-                    <td className="px-2 py-1.5 text-right font-mono text-gray-300">{num(t['_24h'])}</td>
-                    <td className="px-2 py-1.5 text-right font-mono text-gray-300">{num(t['_96h'])}</td>
-                    <td className="px-2 py-1.5 text-right font-mono text-isro-orange">{num(t['_168h'])}</td>
+                    {['_0h', '_24h', '_96h', '_168h'].map((suffix) => (
+                      <td key={suffix} className="px-2 py-1.5 text-right font-mono">
+                        {t[suffix] == null ? (
+                          <span className="text-gray-600">—</span>
+                        ) : data.checkpoint_source?.[param]?.[suffix] === 'computed' ? (
+                          <span className="text-isro-orange">{num(t[suffix])}*</span>
+                        ) : (
+                          <span className={suffix === '_168h' ? 'text-isro-orange' : 'text-gray-300'}>{num(t[suffix])}</span>
+                        )}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
             </table>
+            {Object.values(data.checkpoint_source || {}).some((p) => Object.values(p).includes('computed')) && (
+              <p className="text-[9px] text-isro-orange mt-2">* Value not directly provided — computed by interpolating the checkpoints you entered (0–168h).</p>
+            )}
           </div>
         </div>
       )}
@@ -1444,6 +1466,9 @@ function DetailedReport({ data, onClose }) {
           <div className="flex items-center gap-2 mb-3">
             <span className="w-2 h-2 rounded-full bg-isro-orange" />
             <h4 className="text-sm font-bold text-isro-orange">Module B — Drift Predictions to 168h</h4>
+            {Object.values(data.drift_analysis).some((d) => d.item_source === 'reconstructed') && (
+              <p className="text-[9px] text-isro-orange mt-1">* Reconstructed from provided checkpoints by interpolation.</p>
+            )}
           </div>
           <div className="space-y-3">
             {Object.entries(data.drift_analysis).map(([param, d]) => (
@@ -1457,12 +1482,12 @@ function DetailedReport({ data, onClose }) {
 
                 <div className="grid grid-cols-4 gap-2 text-[10px] mb-2">
                   <div className="p-2 bg-isro-dark rounded-lg">
-                    <p className="text-gray-500">0h</p>
-                    <p className="text-white font-mono mt-0.5">{num(d.input?.value_0h)}</p>
+                    <p className="text-gray-500">0h{d.item_source === 'reconstructed' ? ' *' : ''}</p>
+                    <p className={`${d.item_source === 'reconstructed' ? 'text-isro-orange' : 'text-white'} font-mono mt-0.5`}>{num(d.input?.value_0h)}</p>
                   </div>
                   <div className="p-2 bg-isro-dark rounded-lg">
-                    <p className="text-gray-500">24h</p>
-                    <p className="text-white font-mono mt-0.5">{num(d.input?.value_24h)}</p>
+                    <p className="text-gray-500">24h{d.item_source === 'reconstructed' ? ' *' : ''}</p>
+                    <p className={`${d.item_source === 'reconstructed' ? 'text-isro-orange' : 'text-white'} font-mono mt-0.5`}>{num(d.input?.value_24h)}</p>
                   </div>
                   <div className="p-2 bg-isro-dark rounded-lg">
                     <p className="text-gray-500">Predicted 168h</p>

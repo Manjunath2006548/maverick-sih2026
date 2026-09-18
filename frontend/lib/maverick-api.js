@@ -282,6 +282,115 @@ function numericColumns(records, columns) {
   return columns.filter((c) => isNumericColumn(records, c));
 }
 
+/* ---------------- flexible ingestion helpers ---------------- */
+
+function detectParamTimepoints(columns) {
+  const map = {};
+  const pattern = /^(.+)_(\d+)h$/;
+  for (const col of columns || []) {
+    const m = col.match(pattern);
+    if (!m) continue;
+    const prefix = m[1];
+    const hours = parseInt(m[2], 10);
+    if (!map[prefix]) map[prefix] = [];
+    if (!map[prefix].includes(hours)) map[prefix].push(hours);
+  }
+  for (const k of Object.keys(map)) map[k].sort((a, b) => a - b);
+  return map;
+}
+
+function ensureIds(records) {
+  let next = 1;
+  const used = new Set();
+  for (const r of records) {
+    const cid = r && r.component_id;
+    if (cid !== undefined && cid !== null && cid !== '') used.add(String(cid));
+  }
+  return records.map((r) => {
+    const out = { ...r };
+    if (out.component_id === undefined || out.component_id === null || out.component_id === '') {
+      let cand = `COMP-${String(next).padStart(5, '0')}`;
+      while (used.has(cand)) { next += 1; cand = `COMP-${String(next).padStart(5, '0')}`; }
+      used.add(cand);
+      out.component_id = cand;
+      out._auto_component_id = true;
+    }
+    if (out.lot_id === undefined || out.lot_id === null || out.lot_id === '') {
+      out.lot_id = 'LOT-DEFAULT01';
+      out._auto_lot_id = true;
+    }
+    return out;
+  });
+}
+
+function interpolateAt(hours, vals, target) {
+  if (!hours || !hours.length) return null;
+  if (hours.length === 1) return vals[0];
+  const pts = hours.map((h, i) => ({ h, v: vals[i] })).sort((a, b) => a.h - b.h);
+  for (let i = 0; i < pts.length - 1; i++) {
+    if (target >= pts[i].h && target <= pts[i + 1].h) {
+      const span = (pts[i + 1].h - pts[i].h) || 1;
+      const t = (target - pts[i].h) / span;
+      return pts[i].v + t * (pts[i + 1].v - pts[i].v);
+    }
+  }
+  const last = pts[pts.length - 1];
+  const prev = pts[pts.length - 2];
+  const span = (last.h - prev.h) || 1;
+  const slope = (last.v - prev.v) / span;
+  return last.v + slope * (target - last.h);
+}
+
+function seriesForRow(row, prefix) {
+  const hours = [];
+  const vals = [];
+  const pattern = new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}_(\\d+)h$`);
+  for (const col of Object.keys(row)) {
+    const m = col.match(pattern);
+    if (!m) continue;
+    const v = row[col];
+    if (v === null || v === undefined || isNaN(v)) continue;
+    hours.push(parseInt(m[1], 10));
+    vals.push(v);
+  }
+  const order = hours.map((h, i) => [h, i]).sort((a, b) => a[0] - b[0]).map(([, i]) => i);
+  return { hours: order.map((i) => hours[i]), vals: order.map((i) => vals[i]) };
+}
+
+function colValAt(row, prefix, target, series) {
+  const col = `${prefix}_${target}h`;
+  if (col in row && row[col] !== null && row[col] !== undefined && !isNaN(row[col])) return row[col];
+  if (series && series.hours && series.hours.length) return interpolateAt(series.hours, series.vals, target);
+  return null;
+}
+
+function safetySlopeFromRates(rates) {
+  if (!rates.length) return 0;
+  if (rates.length < 5) return Math.abs(mean(rates)) * 2;
+  return Math.abs(mean(rates)) + NORM_975 * sampleStd(rates);
+}
+
+function checkpointSources(row, prefix, series) {
+  const given = {};
+  const interpolated = {};
+  const src = {};
+  for (const t of [0, 24, 96, 168]) {
+    const col = `${prefix}_${t}h`;
+    const v = row[col];
+    if (v !== null && v !== undefined && !isNaN(v)) {
+      given[t] = v;
+      src[t] = 'direct';
+    } else if (series && series.hours && series.hours.length) {
+      const iv = interpolateAt(series.hours, series.vals, t);
+      if (iv !== null) { interpolated[t] = iv; src[t] = 'interpolated'; }
+      else src[t] = 'missing';
+    } else {
+      src[t] = 'missing';
+    }
+  }
+  return { given, interpolated, src };
+}
+
 /* ---------------- state store ---------------- */
 
 let state = null;
@@ -959,14 +1068,21 @@ async function trainDriftModels(dataset) {
   const safetySlopes = {};
   const featureImportances = {};
 
-  for (const prefix of PARAM_PREFIXES) {
+  const detected = detectParamTimepoints(columns);
+  const extraPrefixes = Object.keys(detected).filter((p) => !PARAM_PREFIXES.includes(p));
+  const prefixes = [...PARAM_PREFIXES, ...extraPrefixes];
+
+  for (const prefix of prefixes) {
     await yieldThread();
     const col0 = `${prefix}_0h`;
     const col24 = `${prefix}_24h`;
     const col168 = `${prefix}_168h`;
     const col96 = `${prefix}_96h`;
-    if (!columns.includes(col0) || !columns.includes(col168)) continue;
+    const availHours = detected[prefix] || [];
+    if (availHours.length < 2) continue;
+    const stdML = columns.includes(col0) && columns.includes(col24) && columns.includes(col168);
 
+    if (stdML) {
     const has96 = columns.includes(col96);
     const featureNames = has96
       ? ['value_0h', 'value_24h', 'drift_0h_24h', 'drift_rate', 'pct_change', 'value_96h', 'drift_24h_96h', 'drift_rate_24h_96h']
@@ -1078,6 +1194,41 @@ async function trainDriftModels(dataset) {
       has96,
       training_metrics: trainingMetrics[prefix],
     };
+    } else {
+    // ---- flexible path: reconstruct any subset of checkpoints ----
+    const rates = [];
+    for (const r of records) {
+      const s = seriesForRow(r, prefix);
+      if (s.hours.length < 2) continue;
+      const v0 = colValAt(r, prefix, 0, s);
+      const v168 = colValAt(r, prefix, 168, s);
+      if (v0 === null || v168 === null || v0 === 0) continue;
+      rates.push((v168 - v0) / 168.0);
+    }
+    if (!rates.length) continue;
+    safetySlopes[prefix] = safetySlopeFromRates(rates);
+    params.push(prefix);
+    trainingMetrics[prefix] = {
+      model_type: 'interpolation',
+      mae: null,
+      rmse: null,
+      r2_score: null,
+      cv_score: null,
+      training_samples: rates.length,
+      safety_slope: rnd(safetySlopes[prefix], 6),
+      note: 'Standard 0h/24h/168h ML training was not possible with the provided checkpoints; missing timepoints were reconstructed by linear interpolation.',
+    };
+    featureImportances[prefix] = {};
+    driftModels[prefix] = {
+      model: null,
+      scaler: null,
+      nFeatures: 0,
+      safety_slope: safetySlopes[prefix],
+      has96: columns.includes(col96),
+      useInterpolation: true,
+      training_metrics: trainingMetrics[prefix],
+    };
+  }
   }
 
   state.trained_parameters = params;
@@ -1151,6 +1302,57 @@ function predictSingleDrift(param, value0h, value24h, value96h) {
   };
 }
 
+function predictRowInterpolated(param, row, series) {
+  const mk = (t) => colValAt(row, param, t, series);
+  const v0 = mk(0);
+  const v24 = mk(24);
+  const v96 = mk(96);
+  const v168 = mk(168);
+  if (v0 === null || v24 === null) {
+    return { status: 'error', message: `Insufficient time-series data for ${param} on this component` };
+  }
+  const predicted168 = v168;
+  const predictedDriftRate = (predicted168 - v0) / 168.0;
+  const model = driftModels[param];
+  const safetySlope = (model && model.safety_slope) || 0;
+  const exceeds = safetySlope > 0 && Math.abs(predictedDriftRate) > safetySlope;
+  let recommendation;
+  let confidence;
+  if (exceeds) {
+    recommendation = 'REJECT';
+    confidence = safetySlope > 0 ? Math.min(Math.abs(predictedDriftRate) / safetySlope, 1.0) : 1.0;
+  } else {
+    confidence = safetySlope > 0 ? (1.0 - Math.abs(predictedDriftRate) / safetySlope) : 0.9;
+    recommendation = 'PASS';
+  }
+  const features = {
+    value_0h: rnd(v0, 6),
+    value_24h: rnd(v24, 6),
+    drift_0h_24h: rnd(v24 - v0, 6),
+    drift_rate_0h_24h: rnd((v24 - v0) / 24.0, 6),
+    pct_change_0h_24h: rnd(v0 !== 0 ? ((v24 - v0) / Math.abs(v0) * 100) : 0, 6),
+    value_96h: v96 === null ? 0 : rnd(v96, 6),
+    value_168h: v168 === null ? null : rnd(v168, 6),
+  };
+  return {
+    status: 'success',
+    parameter: param,
+    input: { value_0h: rnd(v0, 6), value_24h: rnd(v24, 6), value_96h: v96 === null ? null : rnd(v96, 6), value_168h: v168 === null ? null : rnd(v168, 6) },
+    prediction: {
+      predicted_168h: rnd(predicted168, 6),
+      predicted_drift_rate: rnd(predictedDriftRate, 6),
+      safety_slope: rnd(safetySlope, 6),
+      exceeds_safety_slope: exceeds,
+    },
+    recommendation,
+    confidence: rnd(confidence, 4),
+    features,
+    model_info: (model && model.training_metrics) || { model_type: 'interpolation' },
+    method: 'interpolation',
+    explainability: generateDriftExplanation(param, features, predicted168, predictedDriftRate, safetySlope, exceeds, recommendation),
+  };
+}
+
 function generateDriftExplanation(param, features, predicted168, driftRate, safetySlope, exceeds, recommendation) {
   const importance = state.feature_importances[param] || {};
   const topFeatures = Object.entries(importance).sort((a, b) => b[1] - a[1]).slice(0, 3);
@@ -1199,30 +1401,46 @@ function generateDriftExplanation(param, features, predicted168, driftRate, safe
 async function predictDriftBatch(dataset) {
   const allResults = [];
   const accuracyMetrics = {};
-  for (const param of driftModels ? Object.keys(driftModels) : []) {
+  const detected = detectParamTimepoints(dataset.columns);
+  const paramKeys = Object.keys(driftModels).length
+    ? Object.keys(driftModels)
+    : Object.keys(detected);
+
+  for (const param of paramKeys) {
     await yieldThread();
-    const col0 = `${param}_0h`;
-    const col24 = `${param}_24h`;
     const col96 = `${param}_96h`;
     const col168 = `${param}_168h`;
     const has168 = dataset.columns.includes(col168);
     const has96 = dataset.columns.includes(col96);
+    const model = driftModels[param];
     const results = [];
     for (let idx = 0; idx < dataset.records.length; idx++) {
       const row = dataset.records[idx];
-      const v0 = row[col0];
-      const v24 = row[col24];
-      if (v0 === undefined || v24 === undefined || v0 === null || v24 === null || isNaN(v0) || isNaN(v24)) continue;
-      let v96 = has96 ? row[col96] : null;
-      if (v96 === undefined || v96 === null || isNaN(v96)) v96 = null;
-      const prediction = predictSingleDrift(param, v0, v24, v96);
-      const actual = has168 ? row[col168] : null;
-      if (has168 && actual !== null && actual !== undefined && !isNaN(actual)) {
+      const series = seriesForRow(row, param);
+      const v0 = colValAt(row, param, 0, series);
+      const v24 = colValAt(row, param, 24, series);
+      if (v0 === null || v24 === null) continue;
+      let v96 = colValAt(row, param, 96, series);
+      if (!has96 && v96 !== null) v96 = null;
+      const prediction = model && model.useInterpolation
+        ? predictRowInterpolated(param, row, series)
+        : predictSingleDrift(param, v0, v24, v96);
+      if (prediction.status === 'error') continue;
+      const sources = checkpointSources(row, param, series);
+      prediction.item_source = (sources.src[0] === 'direct' && sources.src[24] === 'direct') ? 'direct' : 'reconstructed';
+      prediction.component_checkpoints = {
+        user_input: sources.given,
+        computed: sources.interpolated,
+        source: sources.src,
+        provided_hours: series.hours,
+      };
+      const actual = has168 && row[col168] !== null && row[col168] !== undefined && !isNaN(row[col168]) ? row[col168] : null;
+      if (has168 && actual !== null) {
         prediction.actual_168h = actual;
         prediction.prediction_error = Math.abs(prediction.prediction.predicted_168h - actual);
       }
       prediction.component_index = idx;
-      prediction.component_id = row.component_id;
+      prediction.component_id = row.component_id === undefined ? `COMP-${idx}` : row.component_id;
       if (row.lot_id !== undefined) prediction.lot_id = row.lot_id;
       results.push(prediction);
       if (idx % 24 === 23) await yieldThread();
@@ -1345,7 +1563,8 @@ async function runComprehensive(records, columns, config) {
 }
 
 async function runDriftPipeline(records, columns) {
-  const hasDrift = PARAM_PREFIXES.some((p) => columns.includes(`${p}_0h`) && columns.includes(`${p}_168h`));
+  const detected = detectParamTimepoints(columns);
+  const hasDrift = Object.values(detected).some((arr) => arr.length >= 2);
   if (!hasDrift) return null;
   const params = await trainDriftModels({ records, columns });
   if (!params.length) return null;
@@ -1366,13 +1585,40 @@ function buildExplanation(componentId) {
   if (!match) return { error: 404, detail: 'Component not found in uploaded data' };
 
   const rawValues = {};
-  for (const col of numericColumns(dataset.records, dataset.columns)) {
-    for (const suffix of ['_0h', '_24h', '_96h', '_168h']) {
-      if (col.endsWith(suffix)) {
-        const param = col.slice(0, -suffix.length);
-        if (!rawValues[param]) rawValues[param] = {};
-        rawValues[param][suffix] = rnd(match[col], 4);
-        break;
+  const checkpoint_source = {};
+  const paramHours = {};
+  for (const col of Object.keys(match)) {
+    const m = col.match(/^(.+)_(\d+)h$/);
+    if (!m) continue;
+    const param = m[1];
+    const hour = parseInt(m[2], 10);
+    const v = match[col];
+    if (v === null || v === undefined || isNaN(v)) continue;
+    if (!paramHours[param]) paramHours[param] = [];
+    paramHours[param].push(hour);
+  }
+  for (const param of Object.keys(paramHours)) {
+    if (!rawValues[param]) rawValues[param] = {};
+    if (!checkpoint_source[param]) checkpoint_source[param] = {};
+    const series = seriesForRow(match, param);
+    for (const t of [0, 24, 96, 168]) {
+      const key = `_${t}h`;
+      const providedCol = `${param}_${t}h`;
+      const direct = match[providedCol] !== undefined && match[providedCol] !== null && !isNaN(match[providedCol]);
+      const val = colValAt(match, param, t, series);
+      if (val !== null) {
+        rawValues[param][key] = rnd(val, 4);
+        checkpoint_source[param][key] = direct ? 'direct' : 'computed';
+      } else {
+        rawValues[param][key] = null;
+        checkpoint_source[param][key] = 'missing';
+      }
+    }
+    for (const h of paramHours[param]) {
+      const key = `_${h}h`;
+      if (rawValues[param][key] === undefined) {
+        rawValues[param][key] = rnd(match[`${param}_${h}h`], 4);
+        checkpoint_source[param][key] = 'direct';
       }
     }
   }
@@ -1384,6 +1630,8 @@ function buildExplanation(componentId) {
       : null,
     burn_in_temp: 'burn_in_temp' in match ? match.burn_in_temp : null,
     raw_values: rawValues,
+    checkpoint_source,
+    auto_assigned: Boolean(match._auto_component_id || match._auto_lot_id),
   };
   if (state.outlier_results) {
     const found = state.outlier_results.find((r) => r.component_id !== undefined && String(r.component_id) === String(componentId));
@@ -1416,7 +1664,7 @@ function buildDashboard() {
     const dataset = state.dataset;
     dashboard.data_info = {
       total_components: dataset.records.length,
-      lots: dataset.columns.includes('lot_id')
+      lots: (dataset.records[0] && dataset.records[0].lot_id !== undefined)
         ? new Set(dataset.records.map((r) => String(r.lot_id)).filter(Boolean)).size
         : 0,
       has_ground_truth: dataset.columns.includes('is_defective'),
@@ -1467,6 +1715,7 @@ function preview(records, n) {
   return records.slice(0, n).map((r) => {
     const out = {};
     for (const [k, v] of Object.entries(r)) {
+      if (k.startsWith('_')) continue;
       out[k] = v === null || (typeof v === 'number' && isNaN(v)) ? null : v;
     }
     return out;
@@ -1566,16 +1815,19 @@ export async function handleApiRequest(url, init = {}) {
       }
       const { columns, records } = parseCsv(content);
       if (!columns.length) return respond(400, { detail: 'Error reading file: Empty CSV' });
-      state.dataset = { records, columns };
+      const cleaned = ensureIds(records);
+      if (!cleaned.length) return respond(400, { detail: 'Error reading file: No data rows found' });
+      state.dataset = { records: cleaned, columns };
       state.filename = fname;
       state.columns = columns;
       persist();
       return respond(200, {
         message: 'File uploaded successfully',
         filename: fname,
-        rows: records.length,
+        rows: cleaned.length,
         columns,
-        preview: preview(records, 10),
+        auto_assigned_ids: cleaned.some((r) => r._auto_component_id || r._auto_lot_id),
+        preview: preview(cleaned, 10),
       });
     } catch (e) {
       return respond(400, { detail: `Error reading file: ${e.message || e}` });
@@ -1587,14 +1839,21 @@ export async function handleApiRequest(url, init = {}) {
     if (err) return err;
     const data = await bodyJson();
     if (!Array.isArray(data)) return respond(400, { detail: 'Invalid payload' });
-    const records = data.map((e) => ({ component_id: e.component_id, lot_id: e.lot_id, ...e.measurements }));
-    const columns = Object.keys(records[0] || {});
-    state.dataset = { records, columns };
+    const records = data.map((e) => {
+      const hasMeasurements = e && e.measurements && typeof e.measurements === 'object';
+      return hasMeasurements
+        ? { component_id: e.component_id, lot_id: e.lot_id, ...e.measurements }
+        : { ...e };
+    });
+    const cleaned = ensureIds(records);
+    const columns = Object.keys(cleaned[0] || {}).filter((k) => !k.startsWith('_'));
+    state.dataset = { records: cleaned, columns };
     persist();
     return respond(200, {
-      message: `Uploaded ${records.length} components`,
+      message: `Uploaded ${cleaned.length} components`,
       columns,
-      preview: preview(records, 10),
+      auto_assigned_ids: cleaned.some((r) => r._auto_component_id || r._auto_lot_id),
+      preview: preview(cleaned, 10),
     });
   }
 
@@ -1638,7 +1897,7 @@ export async function handleApiRequest(url, init = {}) {
     const cfg = { ...state.detectorConfig, ...(await bodyJson()) };
     state.detectorConfig = cfg;
     persist();
-    const result = await runOutlierAnalysis(state.dataset.records, state.dataset.columns, cfg);
+    const result = await runOutlierAnalysis(ensureIds(state.dataset.records), state.dataset.columns, cfg);
     if (result.error) return respond(result.error, { detail: result.detail });
     state.outlier_results = result.results;
     state.outlier_summary = result.summary;
@@ -1650,11 +1909,12 @@ export async function handleApiRequest(url, init = {}) {
     const err = await requireAuth();
     if (err) return err;
     if (!state.dataset) return respond(400, { detail: 'No data loaded' });
-    const trained = await trainDriftModels(state.dataset);
+    const ds = { ...state.dataset, records: ensureIds(state.dataset.records) };
+    const trained = await trainDriftModels(ds);
     if (!trained.length) {
       return respond(400, { detail: 'No parametric columns with time-series data found' });
     }
-    const { allResults, accuracyMetrics } = await predictDriftBatch(state.dataset);
+    const { allResults, accuracyMetrics } = await predictDriftBatch(ds);
     state.drift_results = allResults;
     state.drift_accuracy = accuracyMetrics;
     persist();
@@ -1682,10 +1942,11 @@ export async function handleApiRequest(url, init = {}) {
     const err = await requireAuth();
     if (err) return err;
     if (!state.dataset) return respond(400, { detail: 'No data loaded' });
+    const ds = { ...state.dataset, records: ensureIds(state.dataset.records) };
     if (!Object.keys(driftModels).length && state.trained_parameters.length) {
-      await trainDriftModels(state.dataset);
+      await trainDriftModels(ds);
     }
-    const { allResults, accuracyMetrics } = await predictDriftBatch(state.dataset);
+    const { allResults, accuracyMetrics } = await predictDriftBatch(ds);
     state.drift_results = allResults;
     state.drift_accuracy = accuracyMetrics;
     persist();
@@ -1718,7 +1979,7 @@ export async function handleApiRequest(url, init = {}) {
     const cfg = { ...state.detectorConfig, ...(await bodyJson()) };
     state.detectorConfig = cfg;
     persist();
-    const result = await runComprehensive(state.dataset.records, state.dataset.columns, cfg);
+    const result = await runComprehensive(ensureIds(state.dataset.records), state.dataset.columns, cfg);
     if (result.error) return respond(result.error, { detail: result.detail });
     persist();
     return respond(200, {

@@ -74,10 +74,6 @@ export default function UploadPage() {
   };
 
   const addManualEntry = () => {
-    if (!manualEntry.component_id || !manualEntry.lot_id) {
-      setMessage('Please enter component ID and lot ID');
-      return;
-    }
     const measurements = {};
     let validCount = 0;
     manualText.split('\n').forEach(line => {
@@ -97,10 +93,14 @@ export default function UploadPage() {
       setMessage('Please enter at least one measurement (key: value)');
       return;
     }
-    setManualEntries([...manualEntries, { component_id: manualEntry.component_id, lot_id: manualEntry.lot_id, measurements }]);
+    const cid = manualEntry.component_id.trim() || null;
+    const lid = manualEntry.lot_id.trim() || null;
+    const autoNote = (!cid && !lid) ? ' (IDs will be auto-assigned)' : (!cid ? ' (component ID auto-assigned)' : (!lid ? ' (lot ID auto-assigned)' : ''));
+    setManualEntries([...manualEntries, { component_id: cid, lot_id: lid, measurements }]);
     setManualEntry({ component_id: '', lot_id: '', measurements: {} });
     setManualText('');
-    setMessage(`Added component ${manualEntry.component_id} with ${validCount} measurements. Total entries: ${manualEntries.length + 1}`);
+    const compLabel = cid || 'Auto-assigned';
+    setMessage(`Added component ${compLabel} with ${validCount} measurements${autoNote}. Total entries: ${manualEntries.length + 1}`);
   };
 
   const submitManualEntries = async () => {
